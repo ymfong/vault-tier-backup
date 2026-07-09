@@ -1,0 +1,6 @@
+pyzipper>=0.3.6
+requests>=2.31
+msal>=1.28
+
+# Optional, only needed if email.method = "outlook" (Windows + Outlook installed)
+# pywin32>=306

@@ -1,0 +1,47 @@
+{
+  "paths": {
+    "backup_source": "D:\\ImportantFiles",
+    "backup_root_exe": "backup",
+    "backup_root_source": "D:\\ImportantFiles\\BACKUP"
+  },
+  "backup": {
+    "extensions": [".xlsx", ".xlsm", ".accdb"],
+    "include_subfolders_daily": true,
+    "weekly_day": 6,
+    "weekly_full_backup": true,
+    "dual_backup": true,
+    "max_age_days": 1,
+    "skip_keywords": ["backup", "- copy", "~$"]
+  },
+  "control": {
+    "dry_run": true,
+    "email_enabled": false,
+    "upload_to_cloud": false,
+    "cloud_platform": "onedrive",
+    "delete_old_daily": true,
+    "delete_old_weekly": true,
+    "delete_old_monthly": true,
+    "delete_old_yearly": true,
+    "full_backup_mode": false
+  },
+  "retention": {
+    "daily_keep": 7,
+    "weekly_keep": 5,
+    "monthly_keep": 12,
+    "yearly_keep": 2
+  },
+  "email": {
+    "method": "smtp",
+    "smtp_server": "smtp.office365.com",
+    "smtp_port": 587,
+    "from": "you@example.com",
+    "to": "you@example.com"
+  },
+  "cloud": {
+    "onedrive": {
+      "client_id": "YOUR_AZURE_APP_CLIENT_ID",
+      "tenant_id": "YOUR_AZURE_TENANT_ID",
+      "upload_path": "Documents/Backup"
+    }
+  }
+}

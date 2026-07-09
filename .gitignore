@@ -1,0 +1,21 @@
+# Real local config (contains real paths/IDs, never commit)
+config.json
+
+# Backup output / logs / state
+backup/
+logs/
+*.zip
+.last_backup_time
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
