@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 
-from . import archive, cloud, collector, keyguard, notify, restore, state
+from . import archive, cloud, collector, keyguard, mirror, notify, restore, state
 from .config import get_required_env, load_config
 
 
@@ -86,6 +86,7 @@ def run(config_path, dry_run_override=None):
 
     extensions = tuple(backup_cfg["extensions"])
     skip_keywords = [k.lower() for k in backup_cfg.get("skip_keywords", [])]
+    mirrors = config.get("mirrors", [])
     dual_backup = backup_cfg["dual_backup"]
     weekly_day = backup_cfg["weekly_day"]
     weekly_full_backup = backup_cfg["weekly_full_backup"]
@@ -114,6 +115,9 @@ def run(config_path, dry_run_override=None):
         keyguard.ensure_token(backup_root_exe, zip_password)
         if dual_backup:
             keyguard.ensure_token(backup_root_source, zip_password)
+
+    # 3-2-1 nudge: warn if nothing offsite protects against the source drive dying.
+    mirror.warn_if_not_offsite(backup_source, [backup_root_exe, backup_root_source], mirrors)
 
     today = datetime.now()
 
@@ -236,6 +240,12 @@ def run(config_path, dry_run_override=None):
         },
         dry_run,
     )
+
+    # Offsite replica: copy the finalized tier tree (and key token) to each
+    # configured mirror. Runs after retention so mirrors match the pruned set.
+    copied = mirror.sync_mirrors(backup_root_exe, mirrors, dry_run)
+    if mirrors:
+        logger.info(f"Mirror sync: {copied} file(s) {'would be ' if dry_run else ''}copied to {len(mirrors)} mirror(s).")
 
     if should_upload_to_cloud(control.get("upload_to_cloud", False), today.day, monthly_zip_path_source):
         onedrive_cfg = config["cloud"]["onedrive"]

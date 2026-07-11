@@ -30,6 +30,10 @@
     "monthly_keep": 12,
     "yearly_keep": 2
   },
+  "mirrors": [
+    "E:\\VaultBackups",
+    "\\\\nas\\share\\VaultBackups"
+  ],
   "email": {
     "method": "smtp",
     "smtp_server": "smtp.office365.com",

@@ -69,6 +69,9 @@ install the optional extra: `pip install -e .[outlook]` (Windows only).
      required.
    - `email.method` — `"smtp"` or `"outlook"`.
    - `retention.*` — how many daily/weekly/monthly/yearly archives to keep.
+   - `mirrors` — extra destinations (another drive, external disk, network
+     share) that every archive is replicated to after each run. **Set at least
+     one on a different physical device** — see 3-2-1 below. Leave `[]` for none.
 
 ## Usage
 
@@ -102,6 +105,20 @@ itself). Every later run and every restore checks your current password against
 it and **refuses to run on a mismatch**, so a typo'd or rotated password can't
 silently produce backups you'll never be able to restore. Run
 `vault-tier-backup check-key` any time to confirm your password still matches.
+
+## 3-2-1: keep a copy offsite
+
+A backup that lives on the same drive as the original isn't protection — one
+disk failure, ransomware hit, or corruption takes both. Aim for the **3-2-1
+rule**: 3 copies, on 2 kinds of media, with 1 offsite.
+
+Set `mirrors` to one or more destinations on a *different physical device* (an
+external disk, a second internal drive, a NAS/network share). After each run the
+full tier tree — plus the key-verification token, so restores work straight from
+the mirror — is replicated there. Syncing is incremental (only new/changed
+archives) and a mirror that's offline is skipped with a warning rather than
+failing the run. If no mirror is set and your backups share a volume with the
+source, every run prints a warning so the gap stays visible.
 
 ## Platform notes
 - OneDrive upload requires an Azure AD app registration (`client_id` /

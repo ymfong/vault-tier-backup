@@ -21,15 +21,16 @@ fails you when it matters. Nothing else should ship before these.
 - [x] **Restore & list commands.** *(done)* `vault-tier-backup list`
   (`--contents`, `--tier`) and `vault-tier-backup restore <archive> [--to]
   [--member] [--deep]`. See `restore.py`.
-- [ ] **Offsite by default (3-2-1).** Source (`Z:\`) and backup root
-  (`Z:\BACKUP_...`) are on the same volume today — if that drive dies (disk
-  failure, ransomware, corruption), both die together. Make an offsite copy
-  (OneDrive or another volume) a first-class, on-by-default target, not an
-  optional monthly-only rollup. **← next**
+- [x] **Offsite by default (3-2-1).** *(done)* `mirrors` config replicates the
+  full tier tree (and key token) to extra destinations on other devices/network
+  shares after each run — incremental, with offline mirrors skipped gracefully.
+  When no mirror is set and backups share a volume with the source, every run
+  warns. See `mirror.py`. Future: fold the OneDrive upload into this same mirror
+  abstraction so cloud is just another destination.
 - [ ] **Silent-failure monitoring.** Email is optional and off. If the scheduled
   job stops running, nobody learns until a restore emergency. Add a heartbeat /
   dead-man's-switch and turn failure alerting on by default — "no news is bad
-  news."
+  news." **← next**
 
 ## Tier 1 — Reliability & correctness
 

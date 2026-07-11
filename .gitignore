@@ -7,6 +7,9 @@ logs/
 *.zip
 .last_backup_time
 
+# Local scratch space for manual testing (never committed)
+.devtest/
+
 # Python
 __pycache__/
 *.pyc
