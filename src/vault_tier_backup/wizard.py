@@ -195,7 +195,7 @@ def run_wizard(config_path):
     print(f"1. Review {config_path} (it starts in dry-run mode — nothing is written yet).")
     print("2. Test:  vault-tier-backup -c {0} backup   (dry run shows what WOULD happen)".format(config_path))
     print('3. When happy, set "dry_run": false in the config to run for real.')
-    print("4. Schedule it to run daily (Windows Task Scheduler / cron).")
+    print("4. Schedule a daily run:  vault-tier-backup -c {0} install-schedule".format(config_path))
     if not answers["mirrors"]:
         print("5. Consider adding an offsite 'mirror' on another device — see the README (3-2-1).")
     return 0

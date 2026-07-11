@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 
-from . import archive, cloud, collector, keyguard, mirror, monitor, notify, restore, state, wizard
+from . import archive, cloud, collector, keyguard, mirror, monitor, notify, restore, schedule, state, wizard
 from .config import get_required_env, load_config
 
 
@@ -376,6 +376,14 @@ def cmd_init(args):
     return wizard.run_wizard(args.config)
 
 
+def cmd_install_schedule(args):
+    print(schedule.install_schedule(args.config, time_str=args.time, task_name=args.name))
+
+
+def cmd_uninstall_schedule(args):
+    print(schedule.uninstall_schedule(task_name=args.name))
+
+
 def cmd_check_key(args):
     backup_root_exe, backup_root_source = _resolve_roots(args.config)
     password = get_required_env("BACKUP_ZIP_PASSWORD")
@@ -415,6 +423,15 @@ def main():
 
     p_check = sub.add_parser("check-key", help="Verify BACKUP_ZIP_PASSWORD matches existing backups")
     p_check.set_defaults(func=cmd_check_key)
+
+    p_sched = sub.add_parser("install-schedule", help="Register a daily backup (Windows Task Scheduler / cron)")
+    p_sched.add_argument("--time", default=schedule.DEFAULT_TIME, help="Daily run time HH:MM (default 20:00)")
+    p_sched.add_argument("--name", default=schedule.DEFAULT_TASK_NAME, help="Scheduled task name")
+    p_sched.set_defaults(func=cmd_install_schedule)
+
+    p_unsched = sub.add_parser("uninstall-schedule", help="Remove the scheduled daily backup")
+    p_unsched.add_argument("--name", default=schedule.DEFAULT_TASK_NAME, help="Scheduled task name")
+    p_unsched.set_defaults(func=cmd_uninstall_schedule)
 
     args = parser.parse_args()
 

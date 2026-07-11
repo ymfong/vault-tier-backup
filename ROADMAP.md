@@ -62,8 +62,10 @@ fails you when it matters. Nothing else should ship before these.
   password, offers to set the env var, and prints next steps. Config-building is
   a pure, tested function (`wizard.build_config`). Starts in dry-run so the first
   run is a safe no-op.
-- **Built-in scheduling.** `--install-schedule` to register the Task Scheduler
-  (or cron) entry, instead of relying on the user to wire it up correctly.
+- [x] **Built-in scheduling.** *(done)* `install-schedule` / `uninstall-schedule`
+  register a daily job — Windows Task Scheduler via `schtasks` (running a
+  launcher written next to the config), or a printed `crontab` line on POSIX.
+  See `schedule.py`. The `init` wizard points users straight to it.
 - **Cross-platform or explicit Windows scoping.** Today it's Windows-flavored
   (drive letters, Task Scheduler, Outlook COM). Either generalize paths/
   scheduling for Linux/macOS, or state the Windows-only scope plainly.

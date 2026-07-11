@@ -121,11 +121,29 @@ vault-tier-backup check-key                    # confirm your password still mat
 vault-tier-backup restore <archive.zip> --to ./restored
 vault-tier-backup restore <archive.zip> --member report.xlsx --to ./restored
 vault-tier-backup restore <weekly.zip> --deep --to ./restored   # unpack nested rollups
+
+vault-tier-backup install-schedule             # register a daily run at 20:00
+vault-tier-backup install-schedule --time 06:30
+vault-tier-backup uninstall-schedule           # remove it
 ```
 
-Schedule the backup command (Windows Task Scheduler, cron, etc.) to run once a
-day — the weekly/monthly/yearly rollups happen automatically based on the
-current date. `list`, `restore`, and `check-key` are manual, on-demand.
+### Scheduling
+
+The backup should run once a day; the weekly/monthly/yearly rollups happen
+automatically based on the current date. Let the tool set that up for you:
+
+```bash
+vault-tier-backup install-schedule --time 20:00
+```
+
+- **Windows:** registers a daily Task Scheduler job (`schtasks`) that runs a
+  launcher written next to your config. It runs as the current user, so the
+  `BACKUP_ZIP_PASSWORD` you set with `setx` is visible to it. Verify with
+  `schtasks /Query /TN vault-tier-backup`.
+- **Linux/macOS:** writes an executable launcher and prints a ready `crontab -e`
+  line to paste.
+
+`list`, `restore`, and `check-key` are manual, on-demand commands.
 
 ## ⚠️ Your password is the only key
 
