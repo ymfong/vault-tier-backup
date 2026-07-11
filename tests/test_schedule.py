@@ -16,13 +16,22 @@ def test_backup_command_uses_module_and_abspath():
     assert os.path.isabs(cmd[cmd.index("-c") + 1])  # config made absolute
 
 
-def test_windows_launcher_quotes_spaced_paths():
+def test_quote_wraps_paths_with_spaces_or_backslashes():
+    assert schedule._quote("C:\\My Data\\x") == '"C:\\My Data\\x"'
+    assert schedule._quote("has space") == '"has space"'
+    assert schedule._quote("plain") == "plain"
+
+
+def test_windows_launcher_structure_and_quoting():
+    # abspath() would rewrite a foreign Windows path on non-Windows runners, so
+    # assert on the stable parts and on the (spaced) python exe being quoted.
     content = schedule.windows_launcher_content(
-        "C:\\My Data\\config.json", python_exe="C:\\Program Files\\Python\\python.exe"
+        "config.json", python_exe="C:\\Program Files\\Python\\python.exe"
     )
-    assert content.startswith("@echo off")
+    assert content.startswith("@echo off\r\n")
+    assert content.rstrip().endswith("backup")
     assert '"C:\\Program Files\\Python\\python.exe"' in content
-    assert '"C:\\My Data\\config.json"' in content
+    assert "-m vault_tier_backup.run" in content
 
 
 def test_cron_line_maps_time_to_fields():
