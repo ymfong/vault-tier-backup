@@ -1,5 +1,8 @@
 # vault-tier-backup
 
+[![CI](https://github.com/ymfong/vault-tier-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/ymfong/vault-tier-backup/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Automated, **encrypted**, **tiered** backups for important office files (Excel,
 Access, or anything else you list) sitting on a local or network drive. If
 you've ever had a shared spreadsheet get overwritten or corrupted with no way
