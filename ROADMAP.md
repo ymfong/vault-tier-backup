@@ -34,8 +34,11 @@ fails you when it matters. Nothing else should ship before these.
 
 ## Tier 1 — Reliability & correctness
 
-- **Backup integrity verification.** After writing a zip, re-open and checksum
-  it so corruption is caught immediately, not during an emergency restore.
+- [x] **Backup integrity verification.** *(done)* After writing each archive it's
+  re-opened and every member is decrypted + CRC-checked (plus a member-count
+  check); a failure raises before any move/prune/mirror, so a corrupt backup is
+  never trusted and monitoring alerts. Toggle: `control.verify_backups`. See
+  `archive.verify_zip`.
 - [x] **Open / locked file handling.** *(done)* Each file is zipped
   independently — a locked file (open in Excel/Access) is retried, then skipped
   with a warning and reported in the logs/email summary, so one open file never

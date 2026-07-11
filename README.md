@@ -20,6 +20,9 @@ push the monthly snapshot to OneDrive.
 - Optional email notification after each run — SMTP (cross-platform) or
   Outlook COM automation (Windows + Outlook installed).
 - Optional OneDrive upload of the monthly snapshot via Microsoft Graph.
+- Integrity-checked: every archive is re-opened and CRC-verified right after
+  writing, so corruption is caught immediately (a failed check aborts the run
+  and alerts) rather than discovered during an emergency restore.
 - `list` and `restore` commands to browse archives and pull files back out.
 - Resilient to open files: a spreadsheet locked by Excel/Access is retried, then
   skipped with a warning if still busy — one open file never aborts the backup
@@ -74,6 +77,9 @@ install the optional extra: `pip install -e .[outlook]` (Windows only).
      files are written, moved, or deleted in dry-run mode, and no secrets are
      required.
    - `email.method` — `"smtp"` or `"outlook"`.
+   - `control.verify_backups` — re-open and CRC-check each archive after writing
+     (default true); a failed check aborts the run so a corrupt backup is never
+     trusted or mirrored.
    - `retention.*` — how many daily/weekly/monthly/yearly archives to keep.
    - `mirrors` — extra destinations (another drive, external disk, network
      share) that every archive is replicated to after each run. **Set at least

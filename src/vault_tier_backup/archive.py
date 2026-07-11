@@ -13,6 +13,32 @@ DEFAULT_LOCK_RETRIES = 2
 DEFAULT_LOCK_RETRY_DELAY = 3  # seconds
 
 
+class BackupVerificationError(Exception):
+    """Raised when a freshly written archive fails its integrity check."""
+
+
+def verify_zip(zip_path, password, expected_count=None):
+    """Re-open a freshly written archive and confirm it's readable and intact:
+    decrypt and CRC-check every member (testzip), and optionally confirm the
+    member count. Returns (ok: bool, detail: str). Never raises — turns any
+    failure into ok=False so the caller decides how loud to be."""
+    if isinstance(password, str):
+        password = password.encode()
+    try:
+        with pyzipper.AESZipFile(zip_path) as zf:
+            zf.setpassword(password)
+            bad = zf.testzip()  # reads + decrypts + CRC-checks each member
+            if bad is not None:
+                return False, f"corrupt member: {bad}"
+            count = len(zf.namelist())
+    except Exception as e:
+        return False, f"could not open/verify: {e}"
+
+    if expected_count is not None and count != expected_count:
+        return False, f"expected {expected_count} members, found {count}"
+    return True, f"{count} members OK"
+
+
 def _add_file_with_retry(zipf, full_path, rel_path, retries, retry_delay):
     """Write one file into the open zip, retrying on a lock (PermissionError /
     OSError, e.g. Windows "file in use"). Raises the last error if it never

@@ -147,12 +147,15 @@ def run(config_path, dry_run_override=None):
 
     total_size = 0
     skipped = []  # (rel_path, reason) for files locked/unreadable at backup time
+    created = []  # (path, expected_member_count | None) to verify after writing
     if dual_backup:
         total_size += archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run, skipped=skipped)
         total_size += archive.create_encrypted_zip(files, zip_path_source, zip_password, dry_run)
+        created = [(zip_path_exe, len(files) - len(skipped)), (zip_path_source, None)]
         zip_names = f"{zip_name_exe} & {zip_name_source}"
     else:
         total_size = archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run, skipped=skipped)
+        created = [(zip_path_exe, len(files) - len(skipped))]
         zip_names = zip_name_exe
 
     if skipped:
@@ -161,6 +164,19 @@ def run(config_path, dry_run_override=None):
             len(skipped),
             ", ".join(rel for rel, _ in skipped),
         )
+
+    # Integrity check: re-open each freshly written archive and CRC-check every
+    # member BEFORE anything downstream (move/prune/mirror) trusts it. A corrupt
+    # backup is a hard failure — raise so monitoring alerts and success is never
+    # recorded. Runs before retention so a bad backup can't trigger pruning.
+    if control.get("verify_backups", True) and not dry_run:
+        for path, expected in created:
+            ok, detail = archive.verify_zip(path, zip_password, expected)
+            if ok:
+                logger.info(f"Verified integrity: {os.path.basename(path)} ({detail})")
+            else:
+                logger.error(f"INTEGRITY CHECK FAILED for {os.path.basename(path)}: {detail}")
+                raise archive.BackupVerificationError(f"{os.path.basename(path)}: {detail}")
 
     if backup_type in ("daily", "weekly"):
         daily_exe_path = os.path.join(roots_exe["daily"], zip_name_exe)

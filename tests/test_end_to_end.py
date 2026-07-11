@@ -12,7 +12,7 @@ from datetime import datetime
 import pyzipper
 import pytest
 
-from vault_tier_backup import keyguard, restore
+from vault_tier_backup import archive, keyguard, restore
 from vault_tier_backup.run import run
 
 PASSWORD = "correct horse battery staple"
@@ -62,6 +62,24 @@ def _find_daily_zip(tmp_path):
     zips = list(daily_dir.glob("*_daily.zip"))
     assert zips, f"no daily zip produced in {daily_dir}"
     return zips[0]
+
+
+def test_run_aborts_when_integrity_check_fails(tmp_path, monkeypatch):
+    monkeypatch.setenv("BACKUP_ZIP_PASSWORD", PASSWORD)
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "book.xlsx").write_bytes(b"data")
+    config_path = _write_config(tmp_path, source)
+
+    # Simulate a corrupt freshly-written archive: verification reports failure.
+    monkeypatch.setattr(archive, "verify_zip", lambda *a, **k: (False, "corrupt member: book.xlsx"))
+
+    with pytest.raises(archive.BackupVerificationError):
+        run(str(config_path), dry_run_override=False)
+
+    # Success must not have been recorded (no last-run state written on failure).
+    from vault_tier_backup import state
+    assert state.read_last_run_time(str(tmp_path / "out")) is None
 
 
 def test_backup_then_restore_round_trip(tmp_path, monkeypatch):
