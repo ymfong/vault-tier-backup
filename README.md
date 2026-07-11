@@ -21,6 +21,9 @@ push the monthly snapshot to OneDrive.
   Outlook COM automation (Windows + Outlook installed).
 - Optional OneDrive upload of the monthly snapshot via Microsoft Graph.
 - `list` and `restore` commands to browse archives and pull files back out.
+- Resilient to open files: a spreadsheet locked by Excel/Access is retried, then
+  skipped with a warning if still busy — one open file never aborts the backup
+  (see below).
 - Password-loss safeguard: refuses to run if your password no longer matches the
   backups it would be written alongside (see below).
 - `dry_run` mode: logs exactly what would happen without touching a single file.
@@ -145,6 +148,25 @@ that never happens sends nothing.
   before the process exits non-zero.
 - **Staleness warning.** Each run checks how long since the last success and
   warns if it exceeds `max_quiet_hours`.
+
+## Files that are open during a backup
+
+Excel and Access often hold a file open when a scheduled backup fires. This tool
+handles that gracefully:
+
+- Each file is added to the archive independently, so a locked one **never
+  abandons the whole backup** — the rest still complete.
+- A locked file is **retried** a couple of times (locks during a save are
+  usually brief) before being given up on.
+- Anything still locked is **skipped and reported** — counted in the logs and
+  the email summary — so a file that couldn't be captured is visible, not
+  silently missing.
+
+**Limitation:** a file held open and *exclusively locked the entire time* (some
+Access databases) still can't be read this way. Guaranteeing a consistent copy
+of an always-open file needs Windows Volume Shadow Copy (VSS), which isn't
+implemented yet — it's on the roadmap. For now, schedule backups for a time when
+files are typically closed (overnight), and watch the skipped-file count.
 
 ## Platform notes
 - OneDrive upload requires an Azure AD app registration (`client_id` /

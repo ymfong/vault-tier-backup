@@ -146,13 +146,21 @@ def run(config_path, dry_run_override=None):
         logger.info("No files to backup.")
 
     total_size = 0
+    skipped = []  # (rel_path, reason) for files locked/unreadable at backup time
     if dual_backup:
-        total_size += archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run)
+        total_size += archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run, skipped=skipped)
         total_size += archive.create_encrypted_zip(files, zip_path_source, zip_password, dry_run)
         zip_names = f"{zip_name_exe} & {zip_name_source}"
     else:
-        total_size = archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run)
+        total_size = archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run, skipped=skipped)
         zip_names = zip_name_exe
+
+    if skipped:
+        logger.warning(
+            "%d file(s) were locked/unreadable and left OUT of this backup: %s",
+            len(skipped),
+            ", ".join(rel for rel, _ in skipped),
+        )
 
     if backup_type in ("daily", "weekly"):
         daily_exe_path = os.path.join(roots_exe["daily"], zip_name_exe)
@@ -264,9 +272,15 @@ def run(config_path, dry_run_override=None):
     notify.notify(
         config, email_password, zip_names, backup_type,
         num_files=len(files), total_size=total_size, dry_run=dry_run,
+        skipped_count=len(skipped),
     )
 
-    logger.info(f"{backup_type.upper()} backup completed successfully.")
+    if skipped:
+        logger.info(
+            f"{backup_type.upper()} backup completed with {len(skipped)} file(s) skipped (locked)."
+        )
+    else:
+        logger.info(f"{backup_type.upper()} backup completed successfully.")
     state.save_last_run_time(backup_root_exe, today)
 
 

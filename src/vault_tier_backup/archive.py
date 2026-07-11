@@ -1,13 +1,54 @@
 import logging
 import os
+import time
 from datetime import datetime, timedelta
 
 import pyzipper
 
 logger = logging.getLogger(__name__)
 
+# A file locked by Excel/Access is usually only busy for a few seconds (during a
+# save). Retry briefly before giving up so transient locks don't cost a file.
+DEFAULT_LOCK_RETRIES = 2
+DEFAULT_LOCK_RETRY_DELAY = 3  # seconds
 
-def create_encrypted_zip(files_list, zip_path, password, dry_run=False):
+
+def _add_file_with_retry(zipf, full_path, rel_path, retries, retry_delay):
+    """Write one file into the open zip, retrying on a lock (PermissionError /
+    OSError, e.g. Windows "file in use"). Raises the last error if it never
+    frees up."""
+    attempt = 0
+    while True:
+        try:
+            zipf.write(full_path, arcname=rel_path)
+            return
+        except (PermissionError, OSError) as e:
+            if attempt >= retries:
+                raise
+            attempt += 1
+            logger.warning(
+                f"'{rel_path}' is locked ({e}); retry {attempt}/{retries} in {retry_delay}s"
+            )
+            time.sleep(retry_delay)
+
+
+def create_encrypted_zip(
+    files_list,
+    zip_path,
+    password,
+    dry_run=False,
+    skipped=None,
+    retries=DEFAULT_LOCK_RETRIES,
+    retry_delay=DEFAULT_LOCK_RETRY_DELAY,
+):
+    """Create one AES-encrypted zip from files_list.
+
+    Each file is added independently: a file that stays locked (open in Excel/
+    Access) is skipped with a warning and the rest of the backup still
+    completes — one open file must never abandon the whole archive. If a
+    ``skipped`` list is passed, (rel_path, reason) is appended for each casualty
+    so the caller can report them. Returns the total size of files added.
+    """
     total_size = 0
 
     if os.path.exists(zip_path):
@@ -27,7 +68,13 @@ def create_encrypted_zip(files_list, zip_path, password, dry_run=False):
         ) as zipf:
             zipf.setpassword(password)
             for full_path, rel_path, size_bytes, depth in files_list:
-                zipf.write(full_path, arcname=rel_path)
+                try:
+                    _add_file_with_retry(zipf, full_path, rel_path, retries, retry_delay)
+                except (PermissionError, OSError) as e:
+                    logger.error(f"Skipped '{rel_path}' — could not read (still locked?): {e}")
+                    if skipped is not None:
+                        skipped.append((rel_path, str(e)))
+                    continue
                 logger.info(f"Added {rel_path} size={size_bytes} depth={depth}")
                 total_size += size_bytes
     except Exception as e:

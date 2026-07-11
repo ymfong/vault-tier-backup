@@ -36,12 +36,18 @@ fails you when it matters. Nothing else should ship before these.
 
 - **Backup integrity verification.** After writing a zip, re-open and checksum
   it so corruption is caught immediately, not during an emergency restore.
-- **Open / locked file handling.** An Excel or Access file open at run time may
-  be locked or captured half-written on Windows (`.accdb` especially). Detect
-  and handle (skip-with-warning, retry, or shadow-copy).
+- [x] **Open / locked file handling.** *(done)* Each file is zipped
+  independently — a locked file (open in Excel/Access) is retried, then skipped
+  with a warning and reported in the logs/email summary, so one open file never
+  abandons the whole backup. See `archive.py`. **Still open:** a file held
+  *exclusively locked all day* needs Windows Volume Shadow Copy (VSS) for a
+  consistent read — deferred as its own item (admin + COM/diskshadow, sizeable).
 - **Storage growth.** Daily full zips of large files — then zips-of-zips in the
   rollups (re-compressing already-compressed data) — blow up storage. Consider
   incremental/dedup or at least skipping recompression.
+- **Consistent-copy of always-open files (VSS).** Use Volume Shadow Copy to read
+  a point-in-time snapshot of files that are locked the whole time. Needs admin
+  rights and VSS orchestration; the ceiling for open-file backup on Windows.
 
 ## Tier 2 — Usability
 
