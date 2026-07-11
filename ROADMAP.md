@@ -57,8 +57,11 @@ fails you when it matters. Nothing else should ship before these.
 
 ## Tier 2 — Usability
 
-- **Setup wizard.** Interactive prompts that write `config.json` and set the env
-  vars, so non-technical users don't hand-edit JSON or run `setx`.
+- [x] **Setup wizard.** *(done)* `vault-tier-backup init` walks the user through
+  the essentials, writes a valid `config.json`, generates or collects the backup
+  password, offers to set the env var, and prints next steps. Config-building is
+  a pure, tested function (`wizard.build_config`). Starts in dry-run so the first
+  run is a safe no-op.
 - **Built-in scheduling.** `--install-schedule` to register the Task Scheduler
   (or cron) entry, instead of relying on the user to wire it up correctly.
 - **Cross-platform or explicit Windows scoping.** Today it's Windows-flavored

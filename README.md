@@ -44,7 +44,20 @@ pip install -r requirements.txt
 If you plan to use Outlook (instead of SMTP) for email notifications, also
 install the optional extra: `pip install -e .[outlook]` (Windows only).
 
-## Configure
+## Quick start (recommended)
+
+Run the interactive setup wizard — it asks a handful of questions, writes your
+`config.json`, generates a strong backup password, and tells you exactly what to
+do next:
+
+```bash
+vault-tier-backup init
+```
+
+It starts you in dry-run mode so your first `vault-tier-backup backup` is a safe
+no-op you can inspect. Prefer to configure by hand? See below.
+
+## Configure manually
 
 1. Copy the example config and fill in your own paths:
    ```bash
@@ -95,6 +108,8 @@ install the optional extra: `pip install -e .[outlook]` (Windows only).
 ## Usage
 
 ```bash
+vault-tier-backup init                         # interactive first-time setup
+
 vault-tier-backup                              # run a backup (uses ./config.json)
 vault-tier-backup -c path/to/config.json       # use a specific config
 vault-tier-backup backup --dry-run             # force dry-run regardless of config

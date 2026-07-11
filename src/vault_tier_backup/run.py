@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 
-from . import archive, cloud, collector, keyguard, mirror, monitor, notify, restore, state
+from . import archive, cloud, collector, keyguard, mirror, monitor, notify, restore, state, wizard
 from .config import get_required_env, load_config
 
 
@@ -372,6 +372,10 @@ def cmd_restore(args):
     print(f"Restored {len(written)} item(s) to {args.to}")
 
 
+def cmd_init(args):
+    return wizard.run_wizard(args.config)
+
+
 def cmd_check_key(args):
     backup_root_exe, backup_root_source = _resolve_roots(args.config)
     password = get_required_env("BACKUP_ZIP_PASSWORD")
@@ -389,6 +393,9 @@ def main():
     parser = argparse.ArgumentParser(prog="vault-tier-backup", description=__doc__)
     parser.add_argument("-c", "--config", default="config.json", help="Path to config.json (default: ./config.json)")
     sub = parser.add_subparsers(dest="command")
+
+    p_init = sub.add_parser("init", help="Interactive setup — create config.json and set the password")
+    p_init.set_defaults(func=cmd_init)
 
     p_backup = sub.add_parser("backup", help="Run a backup (default action)")
     p_backup.add_argument("--dry-run", action="store_true", default=None, help="Force dry-run regardless of config")
@@ -417,10 +424,12 @@ def main():
         args.dry_run = None
 
     try:
-        args.func(args)
+        rc = args.func(args)
     except Exception as e:
         print(f"[ERROR] {e}", file=sys.stderr)
         sys.exit(1)
+    if rc:
+        sys.exit(rc)
 
 
 if __name__ == "__main__":
