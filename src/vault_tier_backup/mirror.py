@@ -24,13 +24,39 @@ logger = logging.getLogger(__name__)
 
 def volume_of(path):
     """Return a comparable volume identifier for a path (drive letter or UNC
-    share), case-folded. Works on paths that don't exist yet."""
+    share), case-folded. Works on paths that don't exist yet. Empty on POSIX,
+    where drives don't exist — use device_of() there instead."""
     drive, _ = os.path.splitdrive(os.path.abspath(path))
     return drive.casefold()
 
 
+def device_of(path):
+    """st_dev of the nearest existing ancestor of path, or None if none exists.
+    Used on POSIX where volumes are distinguished by device, not drive letter."""
+    p = os.path.abspath(path)
+    while True:
+        if os.path.exists(p):
+            try:
+                return os.stat(p).st_dev
+            except OSError:
+                return None
+        parent = os.path.dirname(p)
+        if parent == p:
+            return None
+        p = parent
+
+
 def same_volume(path_a, path_b):
-    return volume_of(path_a) == volume_of(path_b)
+    """True if both paths live on the same physical volume. Uses drive letters /
+    UNC shares where present (authoritative on Windows), falling back to device
+    ids for driveless POSIX paths."""
+    va, vb = volume_of(path_a), volume_of(path_b)
+    if va or vb:
+        return va == vb
+    da, db = device_of(path_a), device_of(path_b)
+    if da is None or db is None:
+        return True  # can't tell — assume same volume so the 3-2-1 nudge still fires
+    return da == db
 
 
 def warn_if_not_offsite(backup_source, backup_roots, mirrors):

@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from vault_tier_backup import mirror
 from vault_tier_backup.keyguard import TOKEN_FILENAME
 
@@ -14,7 +16,16 @@ def _make_backup_root(tmp_path):
     return root
 
 
-def test_same_volume_detection():
+def test_same_volume_true_for_same_location(tmp_path):
+    # Portable: two dirs on the same volume (drive on Windows, device on POSIX).
+    a, b = tmp_path / "x", tmp_path / "y"
+    a.mkdir()
+    b.mkdir()
+    assert mirror.same_volume(str(a), str(b)) is True
+
+
+@pytest.mark.skipif(os.name != "nt", reason="drive letters are Windows-only")
+def test_same_volume_distinguishes_drive_letters():
     assert mirror.same_volume("C:\\a\\b", "C:\\c\\d") is True
     assert mirror.same_volume("C:\\a", "D:\\a") is False
 
