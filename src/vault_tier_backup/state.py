@@ -35,6 +35,18 @@ def get_days_limit(backup_root_exe, default_days=1):
     return delta.total_seconds() / 86400  # float days
 
 
+def read_last_run_time(backup_root_exe):
+    """Return the datetime of the last successful run, or None if unknown."""
+    state_file = get_state_file(backup_root_exe)
+    if not os.path.exists(state_file):
+        return None
+    try:
+        with open(state_file, "r") as f:
+            return datetime.fromisoformat(f.read().strip())
+    except Exception:
+        return None
+
+
 def save_last_run_time(backup_root_exe, timestamp=None):
     state_file = get_state_file(backup_root_exe)
     if timestamp is None:

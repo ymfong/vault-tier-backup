@@ -27,10 +27,10 @@ fails you when it matters. Nothing else should ship before these.
   When no mirror is set and backups share a volume with the source, every run
   warns. See `mirror.py`. Future: fold the OneDrive upload into this same mirror
   abstraction so cloud is just another destination.
-- [ ] **Silent-failure monitoring.** Email is optional and off. If the scheduled
-  job stops running, nobody learns until a restore emergency. Add a heartbeat /
-  dead-man's-switch and turn failure alerting on by default — "no news is bad
-  news." **← next**
+- [x] **Silent-failure monitoring.** *(done)* Heartbeat/dead-man's-switch
+  (`monitoring.heartbeat_url`, pings on success and `/fail`), failure alerting on
+  by default (`alert_on_failure`), and a start-of-run staleness warning
+  (`max_quiet_hours`). See `monitor.py`. **Tier 0 complete.**
 
 ## Tier 1 — Reliability & correctness
 

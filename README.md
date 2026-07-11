@@ -72,6 +72,11 @@ install the optional extra: `pip install -e .[outlook]` (Windows only).
    - `mirrors` — extra destinations (another drive, external disk, network
      share) that every archive is replicated to after each run. **Set at least
      one on a different physical device** — see 3-2-1 below. Leave `[]` for none.
+   - `monitoring.heartbeat_url` — a URL pinged after every successful run (see
+     "Knowing it's still running" below). Empty to disable.
+   - `monitoring.alert_on_failure` — email you when a run crashes (default true).
+   - `monitoring.max_quiet_hours` — warn at the start of a run if this many hours
+     have passed since the last success (e.g. 26 for a daily job).
 
 ## Usage
 
@@ -119,6 +124,24 @@ the mirror — is replicated there. Syncing is incremental (only new/changed
 archives) and a mirror that's offline is skipped with a warning rather than
 failing the run. If no mirror is set and your backups share a volume with the
 source, every run prints a warning so the gap stays visible.
+
+## Knowing it's still running
+
+A backup job that silently stops — machine off at run time, a disabled task, a
+broken environment — is the most dangerous failure: you don't find out until you
+need a restore that isn't there. Success emails can't catch this, because a run
+that never happens sends nothing.
+
+- **Heartbeat (dead-man's-switch).** Point `monitoring.heartbeat_url` at a check
+  from a free service like [healthchecks.io](https://healthchecks.io) or a
+  self-hosted Uptime Kuma. Each successful run pings it; a failed run pings
+  `<url>/fail`. The service alerts **you** when an expected ping doesn't arrive —
+  the only reliable way to detect a run that never fired, since the watchdog
+  lives off the machine.
+- **Failure alerts.** With `alert_on_failure` (default on), any crash emails you
+  before the process exits non-zero.
+- **Staleness warning.** Each run checks how long since the last success and
+  warns if it exceeds `max_quiet_hours`.
 
 ## Platform notes
 - OneDrive upload requires an Azure AD app registration (`client_id` /

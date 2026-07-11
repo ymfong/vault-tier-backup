@@ -1,4 +1,5 @@
 import logging
+import os
 import smtplib
 from email.message import EmailMessage
 
@@ -89,3 +90,54 @@ def notify(config, email_password, zip_names, backup_type, num_files=None, total
             num_files,
             total_size,
         )
+
+
+def notify_failure(config, error_message, dry_run=False):
+    """Best-effort alert that a run FAILED. Unlike notify(), this fires
+    regardless of email_enabled (which gates success emails) — a failure is
+    exactly when you want to hear from it. Never raises."""
+    if dry_run:
+        return
+    email_cfg = config.get("email", {})
+    to = email_cfg.get("to")
+    if not to:
+        return
+
+    subject = "Backup Notification: FAILED"
+    body = (
+        "The scheduled backup run FAILED and did not complete.\n\n"
+        f"Error: {error_message}\n\n"
+        "Check the logs on the backup machine."
+    )
+    method = email_cfg.get("method", "smtp")
+    try:
+        if method == "outlook":
+            import win32com.client as win32
+
+            outlook = win32.Dispatch("Outlook.Application")
+            mail = outlook.CreateItem(0)
+            mail.To = ";".join(to) if isinstance(to, list) else to
+            mail.Subject = subject
+            mail.Body = body
+            mail.Send()
+        else:
+            password = os.environ.get("BACKUP_EMAIL_PASSWORD")
+            if not password:
+                logger.error(
+                    "alert_on_failure is set but BACKUP_EMAIL_PASSWORD is not — "
+                    "cannot send failure email. (The heartbeat URL is the more "
+                    "reliable failure signal.)"
+                )
+                return
+            msg = EmailMessage()
+            msg["From"] = email_cfg["from"]
+            msg["To"] = ", ".join(to) if isinstance(to, list) else to
+            msg["Subject"] = subject
+            msg.set_content(body)
+            with smtplib.SMTP(email_cfg.get("smtp_server", "smtp.office365.com"), email_cfg.get("smtp_port", 587)) as s:
+                s.starttls()
+                s.login(email_cfg["from"], password)
+                s.send_message(msg)
+        logger.info("Failure alert emailed to %s", to)
+    except Exception as e:
+        logger.error("Could not send failure alert: %s", e)

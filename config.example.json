@@ -34,6 +34,11 @@
     "E:\\VaultBackups",
     "\\\\nas\\share\\VaultBackups"
   ],
+  "monitoring": {
+    "alert_on_failure": true,
+    "heartbeat_url": "",
+    "max_quiet_hours": 26
+  },
   "email": {
     "method": "smtp",
     "smtp_server": "smtp.office365.com",

@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 
-from . import archive, cloud, collector, keyguard, mirror, notify, restore, state
+from . import archive, cloud, collector, keyguard, mirror, monitor, notify, restore, state
 from .config import get_required_env, load_config
 
 
@@ -288,8 +288,32 @@ def _human_size(n):
         n /= 1024
 
 
+def run_monitored(config_path, dry_run_override=None):
+    """Wrap a backup run with silent-failure monitoring: a start-of-run
+    staleness check, a heartbeat ping on success, and a /fail ping plus failure
+    alert on any exception (then re-raise)."""
+    config = load_config(config_path)
+    monitoring = config.get("monitoring", {})
+    heartbeat_url = monitoring.get("heartbeat_url", "")
+    max_quiet_hours = monitoring.get("max_quiet_hours")
+    alert_on_failure = monitoring.get("alert_on_failure", True)
+    dry_run = config["control"]["dry_run"] if dry_run_override is None else dry_run_override
+
+    backup_root_exe, _ = _resolve_roots(config_path)
+    monitor.check_staleness(backup_root_exe, max_quiet_hours)
+
+    try:
+        run(config_path, dry_run_override=dry_run_override)
+    except Exception as exc:
+        monitor.ping_heartbeat(heartbeat_url, "/fail", dry_run)
+        if alert_on_failure:
+            notify.notify_failure(config, str(exc), dry_run)
+        raise
+    monitor.ping_heartbeat(heartbeat_url, "", dry_run)
+
+
 def cmd_backup(args):
-    run(args.config, dry_run_override=args.dry_run)
+    run_monitored(args.config, dry_run_override=args.dry_run)
 
 
 def cmd_list(args):
