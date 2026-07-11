@@ -35,14 +35,32 @@ push the monthly snapshot to OneDrive.
 
 ## Install
 
+**From GitHub (no clone needed):**
+
 ```bash
-pip install -e .
-# or, without installing the package:
-pip install -r requirements.txt
+pip install "git+https://github.com/ymfong/vault-tier-backup.git"
+```
+
+**Or download a built package** from the
+[Releases page](https://github.com/ymfong/vault-tier-backup/releases) and install
+the wheel:
+
+```bash
+pip install vault_tier_backup-0.1.0-py3-none-any.whl
+```
+
+**From a clone (for development):**
+
+```bash
+git clone https://github.com/ymfong/vault-tier-backup.git
+cd vault-tier-backup
+pip install -e ".[dev]"     # includes pytest; run the suite with: pytest
 ```
 
 If you plan to use Outlook (instead of SMTP) for email notifications, also
-install the optional extra: `pip install -e .[outlook]` (Windows only).
+install the optional extra: `pip install -e ".[outlook]"` (Windows only).
+
+Either way you get the `vault-tier-backup` command on your PATH.
 
 ## Quick start (recommended)
 
