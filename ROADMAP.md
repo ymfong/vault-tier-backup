@@ -45,9 +45,12 @@ fails you when it matters. Nothing else should ship before these.
   abandons the whole backup. See `archive.py`. **Still open:** a file held
   *exclusively locked all day* needs Windows Volume Shadow Copy (VSS) for a
   consistent read — deferred as its own item (admin + COM/diskshadow, sizeable).
-- **Storage growth.** Daily full zips of large files — then zips-of-zips in the
-  rollups (re-compressing already-compressed data) — blow up storage. Consider
-  incremental/dedup or at least skipping recompression.
+- [x] **Storage growth (recompression).** *(done)* Already-compressed formats
+  (the rolled-up `.zip`s, media, archives) are now stored verbatim (ZIP_STORED)
+  instead of re-deflated, so the zips-of-zips rollups no longer waste CPU for no
+  gain. Daily runs already skip unchanged files via the mtime `max_age_days`
+  filter. See `archive.ALREADY_COMPRESSED_EXTS`. **Still open:** true cross-backup
+  dedup/incremental (only store changed *blocks*) — a larger feature, deferred.
 - **Consistent-copy of always-open files (VSS).** Use Volume Shadow Copy to read
   a point-in-time snapshot of files that are locked the whole time. Needs admin
   rights and VSS orchestration; the ceiling for open-file backup on Windows.

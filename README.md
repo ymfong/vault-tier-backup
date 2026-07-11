@@ -15,7 +15,9 @@ push the monthly snapshot to OneDrive.
 - Recursively collects files by extension from a source folder, skipping
   anything matching your configured skip keywords.
 - Packs matches into an AES-encrypted ZIP (via [pyzipper](https://pypi.org/project/pyzipper/)).
-- Rolls dailies into weeklies, weeklies into monthlies, monthlies into yearlies.
+- Rolls dailies into weeklies, weeklies into monthlies, monthlies into yearlies
+  — storing already-compressed data (the rolled-up `.zip`s, media, archives)
+  verbatim instead of wastefully re-compressing it.
 - Configurable retention (how many of each tier to keep).
 - Optional email notification after each run — SMTP (cross-platform) or
   Outlook COM automation (Windows + Outlook installed).

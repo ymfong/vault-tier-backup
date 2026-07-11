@@ -12,6 +12,22 @@ logger = logging.getLogger(__name__)
 DEFAULT_LOCK_RETRIES = 2
 DEFAULT_LOCK_RETRY_DELAY = 3  # seconds
 
+# Formats whose bytes are already compressed. Deflating them again costs CPU for
+# essentially no size gain — most importantly the tier rollups, which are
+# zips-of-zips (weekly packs daily .zip files, etc.). Store these verbatim.
+# Office/Access payload types are deliberately NOT here: .accdb compresses well,
+# and leaving .xlsx/.docx as-deflated keeps daily backup sizes unchanged.
+ALREADY_COMPRESSED_EXTS = {
+    ".zip", ".gz", ".xz", ".bz2", ".7z", ".rar",
+    ".jpg", ".jpeg", ".png", ".gif", ".webp",
+    ".mp4", ".mov", ".avi", ".mkv", ".mp3", ".m4a",
+}
+
+
+def _compress_type_for(rel_path):
+    ext = os.path.splitext(rel_path)[1].lower()
+    return pyzipper.ZIP_STORED if ext in ALREADY_COMPRESSED_EXTS else pyzipper.ZIP_DEFLATED
+
 
 class BackupVerificationError(Exception):
     """Raised when a freshly written archive fails its integrity check."""
@@ -43,10 +59,11 @@ def _add_file_with_retry(zipf, full_path, rel_path, retries, retry_delay):
     """Write one file into the open zip, retrying on a lock (PermissionError /
     OSError, e.g. Windows "file in use"). Raises the last error if it never
     frees up."""
+    compress_type = _compress_type_for(rel_path)
     attempt = 0
     while True:
         try:
-            zipf.write(full_path, arcname=rel_path)
+            zipf.write(full_path, arcname=rel_path, compress_type=compress_type)
             return
         except (PermissionError, OSError) as e:
             if attempt >= retries:
