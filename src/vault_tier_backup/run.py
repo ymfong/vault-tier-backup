@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 
-from . import archive, cloud, collector, notify, state
+from . import archive, cloud, collector, keyguard, notify, restore, state
 from .config import get_required_env, load_config
 
 
@@ -105,6 +105,15 @@ def run(config_path, dry_run_override=None):
     onedrive_secret = None
     if control.get("upload_to_cloud", False) and not dry_run:
         onedrive_secret = get_required_env("BACKUP_ONEDRIVE_CLIENT_SECRET")
+
+    # Key-loss safeguard: verify the password matches the one that created any
+    # existing backups here (or register it on first use) BEFORE writing a
+    # single archive, so a changed/typo'd password aborts loudly instead of
+    # silently producing unrecoverable backups. Dry runs never write, so skip.
+    if not dry_run:
+        keyguard.ensure_token(backup_root_exe, zip_password)
+        if dual_backup:
+            keyguard.ensure_token(backup_root_source, zip_password)
 
     today = datetime.now()
 
@@ -251,16 +260,100 @@ def run(config_path, dry_run_override=None):
     state.save_last_run_time(backup_root_exe, today)
 
 
+def _resolve_roots(config_path):
+    """Return (backup_root_exe, backup_root_source) from a config file, matching
+    how run() computes them."""
+    config = load_config(config_path)
+    base_dir = os.path.dirname(os.path.abspath(config_path))
+    paths_cfg = config["paths"]
+    backup_root_exe = os.path.join(base_dir, paths_cfg["backup_root_exe"])
+    backup_root_source = os.path.join(paths_cfg["backup_source"], paths_cfg["backup_root_source"])
+    return backup_root_exe, backup_root_source
+
+
+def _human_size(n):
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024 or unit == "GB":
+            return f"{n:.0f}{unit}" if unit == "B" else f"{n:.1f}{unit}"
+        n /= 1024
+
+
+def cmd_backup(args):
+    run(args.config, dry_run_override=args.dry_run)
+
+
+def cmd_list(args):
+    backup_root_exe, _ = _resolve_roots(args.config)
+    entries = restore.list_backups(backup_root_exe)
+    if not entries:
+        print(f"No backups found under {backup_root_exe}")
+        return
+    print(f"{'TIER':<8} {'SIZE':>10}  {'MODIFIED':<19}  NAME")
+    for e in entries:
+        if args.tier and e["tier"] != args.tier:
+            continue
+        mtime = datetime.fromtimestamp(e["mtime"]).strftime("%Y-%m-%d %H:%M:%S")
+        print(f"{e['tier']:<8} {_human_size(e['size']):>10}  {mtime:<19}  {e['name']}")
+        if args.contents:
+            for member in restore.list_contents(e["path"]):
+                print(f"           - {member}")
+
+
+def cmd_restore(args):
+    backup_root_exe, _ = _resolve_roots(args.config)
+    password = get_required_env("BACKUP_ZIP_PASSWORD")
+    written = restore.restore_archive(
+        backup_root_exe, args.archive, args.to, password, member=args.member, deep=args.deep
+    )
+    print(f"Restored {len(written)} item(s) to {args.to}")
+
+
+def cmd_check_key(args):
+    backup_root_exe, backup_root_source = _resolve_roots(args.config)
+    password = get_required_env("BACKUP_ZIP_PASSWORD")
+    checked = 0
+    for root in (backup_root_exe, backup_root_source):
+        if os.path.exists(keyguard.token_path(root)):
+            keyguard.verify_password(root, password)  # raises on mismatch
+            print(f"OK: password matches backups in {root}")
+            checked += 1
+    if checked == 0:
+        print("No key token found yet — the first real backup will register this password.")
+
+
 def main():
     parser = argparse.ArgumentParser(prog="vault-tier-backup", description=__doc__)
     parser.add_argument("-c", "--config", default="config.json", help="Path to config.json (default: ./config.json)")
-    parser.add_argument(
-        "--dry-run", action="store_true", default=None, help="Force dry-run mode regardless of config"
-    )
+    sub = parser.add_subparsers(dest="command")
+
+    p_backup = sub.add_parser("backup", help="Run a backup (default action)")
+    p_backup.add_argument("--dry-run", action="store_true", default=None, help="Force dry-run regardless of config")
+    p_backup.set_defaults(func=cmd_backup)
+
+    p_list = sub.add_parser("list", help="List existing backups")
+    p_list.add_argument("--tier", choices=restore.TIERS, help="Only show one tier")
+    p_list.add_argument("--contents", action="store_true", help="Also list files inside each archive")
+    p_list.set_defaults(func=cmd_list)
+
+    p_restore = sub.add_parser("restore", help="Restore an archive")
+    p_restore.add_argument("archive", help="Archive filename (e.g. 2026-07-10_..._daily.zip) or full path")
+    p_restore.add_argument("--to", default="restored", help="Destination directory (default: ./restored)")
+    p_restore.add_argument("--member", help="Restore only this file from inside the archive")
+    p_restore.add_argument("--deep", action="store_true", help="Recursively unpack nested rollup archives")
+    p_restore.set_defaults(func=cmd_restore)
+
+    p_check = sub.add_parser("check-key", help="Verify BACKUP_ZIP_PASSWORD matches existing backups")
+    p_check.set_defaults(func=cmd_check_key)
+
     args = parser.parse_args()
 
+    # No subcommand -> default to backup, preserving prior behavior.
+    if not getattr(args, "command", None):
+        args.func = cmd_backup
+        args.dry_run = None
+
     try:
-        run(args.config, dry_run_override=args.dry_run)
+        args.func(args)
     except Exception as e:
         print(f"[ERROR] {e}", file=sys.stderr)
         sys.exit(1)

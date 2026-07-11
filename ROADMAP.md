@@ -9,24 +9,24 @@ data loss come first, and project polish comes last.
 These are the failure modes where the backup gives false confidence and then
 fails you when it matters. Nothing else should ship before these.
 
-- **Password durability / key-loss safeguard.** The AES zip password lives only
-  in `BACKUP_ZIP_PASSWORD`. If it's lost, forgotten, or the machine is
-  reimaged, *every* backup ever made is permanently unrecoverable (AES-256 zips
-  are not crackable). Add: refuse to run until the password is confirmed stored
-  somewhere durable, a recovery-hint/escrow mechanism, and loud documentation.
-- **Prove it end-to-end (not dry-run).** Everything so far is verified only in
-  `dry_run: true`. Produce a real encrypted archive and confirm it decrypts and
-  restores byte-for-byte. Until this is done we don't actually know the tool
-  creates recoverable backups.
-- **Restore & list commands.** `vault-tier-backup list` (see what's captured,
-  when) and `vault-tier-backup restore <file> [--to <dir>]`. A backup tool with
-  no easy restore path hasn't solved the pain point yet.
-- **Offsite by default (3-2-1).** Source (`Z:\`) and backup root
+- [x] **Password durability / key-loss safeguard.** *(done)* The first backup
+  written to a location records a salted PBKDF2 verification token (never the
+  password itself); every run and restore checks the current password against it
+  and refuses to proceed on a mismatch, and a loud warning fires when a password
+  is first registered. `check-key` verifies on demand. Still worth adding later:
+  an explicit recovery-hint/escrow option. See `keyguard.py`.
+- [x] **Prove it end-to-end (not dry-run).** *(done)* `tests/test_end_to_end.py`
+  runs a real encrypted backup, confirms a wrong password can't extract, and
+  asserts the restore is byte-for-byte identical to the source.
+- [x] **Restore & list commands.** *(done)* `vault-tier-backup list`
+  (`--contents`, `--tier`) and `vault-tier-backup restore <archive> [--to]
+  [--member] [--deep]`. See `restore.py`.
+- [ ] **Offsite by default (3-2-1).** Source (`Z:\`) and backup root
   (`Z:\BACKUP_...`) are on the same volume today — if that drive dies (disk
   failure, ransomware, corruption), both die together. Make an offsite copy
   (OneDrive or another volume) a first-class, on-by-default target, not an
-  optional monthly-only rollup.
-- **Silent-failure monitoring.** Email is optional and off. If the scheduled
+  optional monthly-only rollup. **← next**
+- [ ] **Silent-failure monitoring.** Email is optional and off. If the scheduled
   job stops running, nobody learns until a restore emergency. Add a heartbeat /
   dead-man's-switch and turn failure alerting on by default — "no news is bad
   news."

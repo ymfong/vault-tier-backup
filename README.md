@@ -17,6 +17,9 @@ push the monthly snapshot to OneDrive.
 - Optional email notification after each run — SMTP (cross-platform) or
   Outlook COM automation (Windows + Outlook installed).
 - Optional OneDrive upload of the monthly snapshot via Microsoft Graph.
+- `list` and `restore` commands to browse archives and pull files back out.
+- Password-loss safeguard: refuses to run if your password no longer matches the
+  backups it would be written alongside (see below).
 - `dry_run` mode: logs exactly what would happen without touching a single file.
 
 ## Install
@@ -70,13 +73,35 @@ install the optional extra: `pip install -e .[outlook]` (Windows only).
 ## Usage
 
 ```bash
-vault-tier-backup                       # uses ./config.json
-vault-tier-backup -c path/to/config.json
-vault-tier-backup --dry-run             # force dry-run regardless of config
+vault-tier-backup                              # run a backup (uses ./config.json)
+vault-tier-backup -c path/to/config.json       # use a specific config
+vault-tier-backup backup --dry-run             # force dry-run regardless of config
+
+vault-tier-backup list                         # show existing backups
+vault-tier-backup list --contents              # ...and the files inside each
+vault-tier-backup check-key                    # confirm your password still matches
+
+vault-tier-backup restore <archive.zip> --to ./restored
+vault-tier-backup restore <archive.zip> --member report.xlsx --to ./restored
+vault-tier-backup restore <weekly.zip> --deep --to ./restored   # unpack nested rollups
 ```
 
-Schedule it (Windows Task Scheduler, cron, etc.) to run once a day — the
-weekly/monthly/yearly rollups happen automatically based on the current date.
+Schedule the backup command (Windows Task Scheduler, cron, etc.) to run once a
+day — the weekly/monthly/yearly rollups happen automatically based on the
+current date. `list`, `restore`, and `check-key` are manual, on-demand.
+
+## ⚠️ Your password is the only key
+
+Backups are AES-encrypted with `BACKUP_ZIP_PASSWORD`. **If you lose that
+password, every backup is permanently unrecoverable — there is no reset.**
+Store it in a password manager the moment you set it.
+
+To protect you from a subtler failure, the first backup written to a location
+records a one-way verification token (a salted hash — never the password
+itself). Every later run and every restore checks your current password against
+it and **refuses to run on a mismatch**, so a typo'd or rotated password can't
+silently produce backups you'll never be able to restore. Run
+`vault-tier-backup check-key` any time to confirm your password still matches.
 
 ## Platform notes
 - OneDrive upload requires an Azure AD app registration (`client_id` /
