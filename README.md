@@ -31,6 +31,14 @@ push the monthly snapshot to OneDrive.
   (see below).
 - Password-loss safeguard: refuses to run if your password no longer matches the
   backups it would be written alongside (see below).
+- Pre-flight safety checks that turn silent failures into visible warnings:
+  flags a backup destination on the *same physical disk* as the source, warns
+  when the source has *no matching files at all* (a wrong path or wrong file
+  types) instead of cheerfully backing up nothing, and warns before a filling
+  drive becomes a mid-write failure.
+- `test-restore` fire-drill: actually restores your newest backup to a temp
+  folder and confirms it comes out — a backup you've never restored from is a
+  guess.
 - `dry_run` mode: logs exactly what would happen without touching a single file.
 
 ## Install
@@ -135,6 +143,7 @@ vault-tier-backup backup --dry-run             # force dry-run regardless of con
 vault-tier-backup list                         # show existing backups
 vault-tier-backup list --contents              # ...and the files inside each
 vault-tier-backup check-key                    # confirm your password still matches
+vault-tier-backup test-restore                 # fire-drill: prove the newest backup restores
 
 vault-tier-backup restore <archive.zip> --to ./restored
 vault-tier-backup restore <archive.zip> --member report.xlsx --to ./restored

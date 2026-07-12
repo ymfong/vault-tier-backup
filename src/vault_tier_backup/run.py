@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 
-from . import archive, cloud, collector, keyguard, mirror, monitor, notify, restore, schedule, state, wizard
+from . import archive, cloud, collector, keyguard, mirror, monitor, notify, restore, safety, schedule, state, wizard
 from .config import get_required_env, load_config
 
 
@@ -116,8 +116,13 @@ def run(config_path, dry_run_override=None):
         if dual_backup:
             keyguard.ensure_token(backup_root_source, zip_password)
 
+    dest_roots = [backup_root_exe, backup_root_source] if dual_backup else [backup_root_exe]
+
     # 3-2-1 nudge: warn if nothing offsite protects against the source drive dying.
-    mirror.warn_if_not_offsite(backup_source, [backup_root_exe, backup_root_source], mirrors)
+    mirror.warn_if_not_offsite(backup_source, dest_roots, mirrors)
+    # Same-disk safety: warn if the primary backup shares the source's physical
+    # disk — a single drive failure would take the originals and the backup.
+    safety.warn_if_primary_on_source_disk(backup_source, dest_roots, has_mirror=bool(mirrors))
 
     today = datetime.now()
 
@@ -143,7 +148,29 @@ def run(config_path, dry_run_override=None):
         full_backup_mode=full_backup_mode,
     )
     if not files:
-        logger.info("No files to backup.")
+        # An empty set is normal on a quiet day (nothing changed within the mtime
+        # window) — but alarming if the source has NO matching files at all, which
+        # means a wrong path or wrong extensions. Distinguish the two.
+        total_matching = collector.get_files_to_backup(
+            backup_source, extensions, backup_roots=dest_roots,
+            skip_keywords=skip_keywords, days_limit=None,
+            include_subfolders=backup_cfg["include_subfolders_daily"],
+            full_backup_mode=full_backup_mode,
+        )
+        if safety.looks_like_misconfiguration(len(files), len(total_matching)):
+            logger.warning(
+                "No files match extensions %s under '%s'. Nothing is being backed "
+                "up — check the source folder and file types in your config.",
+                list(extensions), backup_source,
+            )
+        else:
+            logger.info("No files changed within the backup window — nothing to do today (normal).")
+
+    # Disk-space pre-flight: warn before writing so a filling drive is visible
+    # early instead of surfacing as a mid-write failure. dual_backup writes twice.
+    if files and not dry_run:
+        needed = sum(size for _, _, size, _ in files) * (2 if dual_backup else 1)
+        safety.warn_low_disk_space(dest_roots, needed)
 
     total_size = 0
     skipped = []  # (rel_path, reason) for files locked/unreadable at backup time
@@ -397,6 +424,26 @@ def cmd_check_key(args):
         print("No key token found yet — the first real backup will register this password.")
 
 
+def cmd_test_restore(args):
+    """Fire-drill: actually restore the newest backup to a temp folder and
+    confirm it comes out. A backup you've never restored from is a guess."""
+    backup_root_exe, backup_root_source = _resolve_roots(args.config)
+    password = get_required_env("BACKUP_ZIP_PASSWORD")
+    ok_any = False
+    for root in (backup_root_exe, backup_root_source):
+        if not restore.list_backups(root):
+            continue
+        ok, detail = safety.test_restore(root, password, archive_name=args.archive)
+        marker = "OK" if ok else "FAILED"
+        print(f"[{marker}] {root}: {detail}")
+        ok_any = ok_any or ok
+        if not ok:
+            return 1
+    if not ok_any:
+        print("No backups found yet to test — run a backup first.")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(prog="vault-tier-backup", description=__doc__)
     parser.add_argument("-c", "--config", default="config.json", help="Path to config.json (default: ./config.json)")
@@ -423,6 +470,10 @@ def main():
 
     p_check = sub.add_parser("check-key", help="Verify BACKUP_ZIP_PASSWORD matches existing backups")
     p_check.set_defaults(func=cmd_check_key)
+
+    p_testr = sub.add_parser("test-restore", help="Fire-drill: restore the newest backup to a temp folder to prove it works")
+    p_testr.add_argument("--archive", help="Test a specific archive by name instead of the newest")
+    p_testr.set_defaults(func=cmd_test_restore)
 
     p_sched = sub.add_parser("install-schedule", help="Register a daily backup (Windows Task Scheduler / cron)")
     p_sched.add_argument("--time", default=schedule.DEFAULT_TIME, help="Daily run time HH:MM (default 20:00)")

@@ -51,6 +51,14 @@ fails you when it matters. Nothing else should ship before these.
   gain. Daily runs already skip unchanged files via the mtime `max_age_days`
   filter. See `archive.ALREADY_COMPRESSED_EXTS`. **Still open:** true cross-backup
   dedup/incremental (only store changed *blocks*) — a larger feature, deferred.
+- [x] **Pre-flight safety checks.** *(done)* Catch the silent failures a
+  non-technical user never sees coming: a backup destination on the *same disk*
+  as the source, an empty backup caused by a wrong path / wrong extensions (vs a
+  normal quiet day), and a destination low on free space — each surfaced as a
+  visible warning rather than a cheerful success. See `safety.py`.
+- [x] **Restore fire-drill.** *(done)* `test-restore` actually restores the
+  newest backup to a temp folder and confirms it comes out, so "I have backups"
+  becomes "I have backups I've restored from". See `safety.test_restore`.
 - **Consistent-copy of always-open files (VSS).** Use Volume Shadow Copy to read
   a point-in-time snapshot of files that are locked the whole time. Needs admin
   rights and VSS orchestration; the ceiling for open-file backup on Windows.
