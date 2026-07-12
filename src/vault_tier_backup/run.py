@@ -42,7 +42,11 @@ def _setup_logging(log_dir):
     json_handler.setFormatter(_JsonFormatter())
     logger.addHandler(json_handler)
 
-    logger.addHandler(logging.StreamHandler())
+    # Windowed (PyInstaller --noconsole) builds have no stderr; a StreamHandler
+    # pointed at None would crash the first log call. File logs still capture
+    # everything, which is what scheduled runs rely on.
+    if sys.stderr is not None:
+        logger.addHandler(logging.StreamHandler())
     return logger
 
 

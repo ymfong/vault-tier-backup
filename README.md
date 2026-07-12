@@ -43,6 +43,13 @@ push the monthly snapshot to OneDrive.
 
 ## Install
 
+**Easiest (Windows, no Python needed):** download `VaultTierBackup.exe` from the
+[Releases page](https://github.com/ymfong/vault-tier-backup/releases) and
+double-click it. The desktop app opens; your settings live in
+`%APPDATA%\vault-tier-backup`. The first launch may show a Windows SmartScreen
+warning because the exe isn't code-signed — click "More info" → "Run anyway"
+(or build it yourself from source, below).
+
 **From GitHub (no clone needed):**
 
 ```bash
@@ -68,7 +75,15 @@ pip install -e ".[dev]"     # includes pytest; run the suite with: pytest
 If you plan to use Outlook (instead of SMTP) for email notifications, also
 install the optional extra: `pip install -e ".[outlook]"` (Windows only).
 
-Either way you get the `vault-tier-backup` command on your PATH.
+The pip installs give you the `vault-tier-backup` command on your PATH.
+
+**Building the exe yourself:**
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile --noconsole --name VaultTierBackup packaging/exe_entry.py
+# -> dist/VaultTierBackup.exe
+```
 
 ## Quick start (recommended)
 

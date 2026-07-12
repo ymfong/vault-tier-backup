@@ -16,6 +16,17 @@ def test_backup_command_uses_module_and_abspath():
     assert os.path.isabs(cmd[cmd.index("-c") + 1])  # config made absolute
 
 
+def test_backup_command_frozen_exe_takes_args_directly(monkeypatch):
+    import sys
+    # In a PyInstaller build the exe IS the program — no `-m` module flag.
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", "C:\\Apps\\VaultTierBackup.exe")
+    cmd = schedule.backup_command("config.json")
+    assert cmd[0] == "C:\\Apps\\VaultTierBackup.exe"
+    assert "-m" not in cmd
+    assert cmd[-1] == "backup" and "-c" in cmd
+
+
 def test_quote_wraps_paths_with_spaces_or_backslashes():
     assert schedule._quote("C:\\My Data\\x") == '"C:\\My Data\\x"'
     assert schedule._quote("has space") == '"has space"'

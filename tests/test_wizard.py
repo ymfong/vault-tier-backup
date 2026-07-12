@@ -16,6 +16,9 @@ def test_build_config_minimal_is_valid():
     config = wizard.build_config({"source": "D:\\Data"})
     # Spot-check the shape run() depends on.
     assert config["paths"]["backup_source"] == "D:\\Data"
+    # dual_backup must default OFF: a second copy inside the source folder is
+    # surprising clutter and doubles storage on the same disk for no safety.
+    assert config["backup"]["dual_backup"] is False
     assert config["backup"]["extensions"] == wizard.DEFAULT_EXTENSIONS
     assert config["control"]["dry_run"] is True          # safe default
     assert config["control"]["email_enabled"] is False   # no email given

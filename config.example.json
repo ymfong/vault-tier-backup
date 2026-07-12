@@ -9,7 +9,7 @@
     "include_subfolders_daily": true,
     "weekly_day": 6,
     "weekly_full_backup": true,
-    "dual_backup": true,
+    "dual_backup": false,
     "max_age_days": 1,
     "skip_keywords": ["backup", "- copy", "~$"]
   },

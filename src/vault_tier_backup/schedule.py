@@ -28,9 +28,13 @@ DEFAULT_TIME = "20:00"
 
 def backup_command(config_path, python_exe=None):
     """The argv that a scheduled run should execute. Uses `python -m` so it
-    doesn't depend on the console-script being on the scheduler's PATH."""
-    python_exe = python_exe or sys.executable
+    doesn't depend on the console-script being on the scheduler's PATH. In a
+    frozen (PyInstaller) build there is no interpreter to hand `-m` — the exe
+    itself takes the CLI arguments directly."""
     config_abs = os.path.abspath(config_path)
+    if python_exe is None and getattr(sys, "frozen", False):
+        return [sys.executable, "-c", config_abs, "backup"]
+    python_exe = python_exe or sys.executable
     return [python_exe, "-m", "vault_tier_backup.run", "-c", config_abs, "backup"]
 
 

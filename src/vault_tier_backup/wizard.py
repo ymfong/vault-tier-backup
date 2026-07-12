@@ -42,7 +42,10 @@ def build_config(answers):
             "include_subfolders_daily": True,
             "weekly_day": answers.get("weekly_day", 6),
             "weekly_full_backup": True,
-            "dual_backup": answers.get("dual_backup", True),
+            # Off by default: a second copy inside the source folder doubles
+            # storage on the same disk for zero extra safety (and clutters the
+            # user's documents). Real protection is the offsite mirror.
+            "dual_backup": answers.get("dual_backup", False),
             "max_age_days": answers.get("max_age_days", 1),
             "skip_keywords": answers.get("skip_keywords", ["- copy", "~$"]),
         },

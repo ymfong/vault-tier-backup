@@ -65,6 +65,13 @@ fails you when it matters. Nothing else should ship before these.
 
 ## Tier 2 — Usability
 
+- [x] **Standalone Windows exe.** *(done)* `VaultTierBackup.exe` (PyInstaller,
+  attached to each GitHub release) — download, double-click, the GUI opens; no
+  Python, no pip, no terminal. Config lives in `%APPDATA%\vault-tier-backup`.
+  CLI arguments fall through to the normal CLI, so the scheduled task the GUI
+  registers runs through the same exe. Build: `packaging/exe_entry.py`.
+  **Still open:** the exe is unsigned, so SmartScreen warns on first run —
+  code-signing needs a paid certificate.
 - [x] **Desktop GUI.** *(done)* `vault-tier-backup gui` — a Tkinter (built-in, no
   extra deps) app with a Settings tab (folders, file types, encryption/verify
   toggles, mirror, retention) and a Backups tab (status, archive list, one-click
