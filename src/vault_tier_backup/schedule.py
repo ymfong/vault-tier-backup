@@ -3,13 +3,15 @@
 Relying on the user to wire up Task Scheduler / cron by hand is the last
 error-prone manual step in setup. `install-schedule` registers a daily job:
 
-- Windows: writes a small launcher `.cmd` next to the config and registers a
-  `schtasks` daily task that runs it. The task runs as the current user, so the
-  `BACKUP_ZIP_PASSWORD` set in the user environment is visible to it.
+- Windows: writes a small launcher `.cmd` next to the config and registers the
+  task from an XML definition so a missed run (PC off, asleep, or logged out at
+  the scheduled time) catches up at the next opportunity instead of being lost.
+  The task runs as the current user, so the `BACKUP_ZIP_PASSWORD` set in the
+  user environment is visible to it.
 - POSIX: writes a launcher `.sh` and prints a ready-to-paste crontab line (we
   don't edit the user's crontab for them).
 
-The command/launcher/cron builders are pure functions so they can be tested
+The command/launcher/cron/XML builders are pure functions so they can be tested
 without touching the OS scheduler.
 """
 
@@ -17,6 +19,8 @@ import os
 import stat
 import subprocess
 import sys
+import tempfile
+from datetime import datetime
 
 DEFAULT_TASK_NAME = "vault-tier-backup"
 DEFAULT_TIME = "20:00"
@@ -61,21 +65,85 @@ def _launcher_path(config_path, ext):
     return os.path.join(os.path.dirname(os.path.abspath(config_path)), f"vault-tier-backup-run{ext}")
 
 
+def _xml_escape(text):
+    return (text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
+def windows_task_xml(launcher_path, time_str, description="vault-tier-backup daily backup"):
+    """Task Scheduler XML for a daily run that survives the PC being off/asleep/
+    logged-out at the scheduled time.
+
+    StartWhenAvailable makes a missed run fire at the next opportunity (next
+    logon / wake) instead of being silently skipped; WakeToRun wakes the machine
+    from sleep to run. The task runs under InteractiveToken (the current user) so
+    the per-user BACKUP_ZIP_PASSWORD env var is visible — which is why we don't
+    use the SYSTEM account or a stored Windows password."""
+    hour, minute = _parse_hhmm(time_str)
+    start = datetime.now().strftime("%Y-%m-%d") + f"T{hour:02d}:{minute:02d}:00"
+    launcher_path = _xml_escape(launcher_path)
+    description = _xml_escape(description)
+    return (
+        '<?xml version="1.0" encoding="UTF-16"?>\r\n'
+        '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">\r\n'
+        "  <RegistrationInfo>\r\n"
+        f"    <Description>{description}</Description>\r\n"
+        "  </RegistrationInfo>\r\n"
+        "  <Triggers>\r\n"
+        "    <CalendarTrigger>\r\n"
+        f"      <StartBoundary>{start}</StartBoundary>\r\n"
+        "      <Enabled>true</Enabled>\r\n"
+        "      <ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay>\r\n"
+        "    </CalendarTrigger>\r\n"
+        "  </Triggers>\r\n"
+        "  <Principals>\r\n"
+        '    <Principal id="Author">\r\n'
+        "      <LogonType>InteractiveToken</LogonType>\r\n"
+        "      <RunLevel>LeastPrivilege</RunLevel>\r\n"
+        "    </Principal>\r\n"
+        "  </Principals>\r\n"
+        "  <Settings>\r\n"
+        "    <StartWhenAvailable>true</StartWhenAvailable>\r\n"
+        "    <WakeToRun>true</WakeToRun>\r\n"
+        "    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\r\n"
+        "    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>\r\n"
+        "    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>\r\n"
+        "    <ExecutionTimeLimit>PT2H</ExecutionTimeLimit>\r\n"
+        "    <Enabled>true</Enabled>\r\n"
+        "  </Settings>\r\n"
+        '  <Actions Context="Author">\r\n'
+        f"    <Exec><Command>{launcher_path}</Command></Exec>\r\n"
+        "  </Actions>\r\n"
+        "</Task>\r\n"
+    )
+
+
 def install_windows(config_path, time_str, task_name, python_exe=None, runner=subprocess.run):
     _parse_hhmm(time_str)  # validate early
     launcher = _launcher_path(config_path, ".cmd")
     with open(launcher, "w", encoding="utf-8", newline="") as f:
         f.write(windows_launcher_content(config_path, python_exe))
 
-    result = runner(
-        ["schtasks", "/Create", "/TN", task_name, "/TR", _quote(launcher),
-         "/SC", "DAILY", "/ST", time_str, "/F"],
-        capture_output=True, text=True,
-    )
+    xml = windows_task_xml(launcher, time_str)
+    xml_fd, xml_path = tempfile.mkstemp(suffix=".xml", prefix="vtb-task-")
+    os.close(xml_fd)
+    try:
+        with open(xml_path, "w", encoding="utf-16") as f:  # schtasks /XML expects Unicode
+            f.write(xml)
+        result = runner(
+            ["schtasks", "/Create", "/TN", task_name, "/XML", xml_path, "/F"],
+            capture_output=True, text=True,
+        )
+    finally:
+        try:
+            os.remove(xml_path)
+        except OSError:
+            pass
+
     if result.returncode != 0:
         raise RuntimeError(f"schtasks failed: {result.stderr.strip() or result.stdout.strip()}")
     return (
         f"Scheduled daily backup '{task_name}' at {time_str}.\n"
+        f"Missed runs (PC off/asleep/logged out) catch up at the next opportunity.\n"
         f"Launcher: {launcher}\n"
         f"Verify with:  schtasks /Query /TN \"{task_name}\"\n"
         f"Remove with:  vault-tier-backup uninstall-schedule"

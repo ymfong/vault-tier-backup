@@ -163,10 +163,12 @@ automatically based on the current date. Let the tool set that up for you:
 vault-tier-backup install-schedule --time 20:00
 ```
 
-- **Windows:** registers a daily Task Scheduler job (`schtasks`) that runs a
-  launcher written next to your config. It runs as the current user, so the
-  `BACKUP_ZIP_PASSWORD` you set with `setx` is visible to it. Verify with
-  `schtasks /Query /TN vault-tier-backup`.
+- **Windows:** registers a daily Task Scheduler job that runs a launcher written
+  next to your config. It runs as the current user, so the `BACKUP_ZIP_PASSWORD`
+  you set with `setx` is visible to it. If the PC is **off, asleep, or logged
+  out** at the scheduled time, the missed run **catches up at the next
+  opportunity** (and wakes the machine from sleep) rather than being silently
+  skipped. Verify with `schtasks /Query /TN vault-tier-backup`.
 - **Linux/macOS:** writes an executable launcher and prints a ready `crontab -e`
   line to paste.
 

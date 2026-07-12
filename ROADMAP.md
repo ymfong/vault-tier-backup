@@ -71,9 +71,12 @@ fails you when it matters. Nothing else should ship before these.
   a pure, tested function (`wizard.build_config`). Starts in dry-run so the first
   run is a safe no-op.
 - [x] **Built-in scheduling.** *(done)* `install-schedule` / `uninstall-schedule`
-  register a daily job — Windows Task Scheduler via `schtasks` (running a
-  launcher written next to the config), or a printed `crontab` line on POSIX.
-  See `schedule.py`. The `init` wizard points users straight to it.
+  register a daily job — Windows Task Scheduler (from an XML definition), or a
+  printed `crontab` line on POSIX. See `schedule.py`. The `init` wizard points
+  users straight to it. A missed run (PC off/asleep/logged out at the scheduled
+  time) **catches up at the next opportunity** via `StartWhenAvailable` +
+  `WakeToRun`, instead of being silently skipped — no stored Windows password
+  needed, so the per-user `BACKUP_ZIP_PASSWORD` stays visible.
 - **Cross-platform or explicit Windows scoping.** Today it's Windows-flavored
   (drive letters, Task Scheduler, Outlook COM). Either generalize paths/
   scheduling for Linux/macOS, or state the Windows-only scope plainly.

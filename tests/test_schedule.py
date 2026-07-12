@@ -53,11 +53,26 @@ class _FakeResult:
         self.stderr = stderr
 
 
-def test_install_windows_invokes_schtasks(tmp_path):
+def test_task_xml_survives_missed_runs():
+    xml = schedule.windows_task_xml("C:\\x\\run.cmd", "20:00")
+    # The whole point of #5: a missed run must catch up, and it wakes to run.
+    assert "<StartWhenAvailable>true</StartWhenAvailable>" in xml
+    assert "<WakeToRun>true</WakeToRun>" in xml
+    # Runs as the logged-in user (so the per-user password env var is visible).
+    assert "<LogonType>InteractiveToken</LogonType>" in xml
+    assert "<Command>C:\\x\\run.cmd</Command>" in xml
+    assert "T20:00:00" in xml
+
+
+def test_install_windows_registers_from_xml(tmp_path):
     calls = {}
 
     def fake_runner(argv, **kwargs):
         calls["argv"] = argv
+        # The XML file must still exist at call time so schtasks could read it.
+        xml_path = argv[argv.index("/XML") + 1]
+        with open(xml_path, encoding="utf-16") as f:
+            calls["xml"] = f.read()
         return _FakeResult(returncode=0, stdout="SUCCESS")
 
     config = tmp_path / "config.json"
@@ -67,11 +82,11 @@ def test_install_windows_invokes_schtasks(tmp_path):
     argv = calls["argv"]
     assert argv[0] == "schtasks" and "/Create" in argv
     assert "/TN" in argv and "vtb-test" in argv
-    assert "/SC" in argv and "DAILY" in argv
-    assert "/ST" in argv and "20:00" in argv
-    # Launcher .cmd was written next to the config.
+    assert "/XML" in argv and "/F" in argv
+    assert "<StartWhenAvailable>true</StartWhenAvailable>" in calls["xml"]
+    # Launcher .cmd was written next to the config; temp XML is cleaned up.
     assert (tmp_path / "vault-tier-backup-run.cmd").exists()
-    assert "Scheduled daily backup" in msg
+    assert "catch up" in msg
 
 
 def test_install_windows_raises_on_schtasks_failure(tmp_path):
