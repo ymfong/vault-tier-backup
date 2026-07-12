@@ -65,6 +65,13 @@ fails you when it matters. Nothing else should ship before these.
 
 ## Tier 2 — Usability
 
+- [x] **Desktop GUI.** *(done)* `vault-tier-backup gui` — a Tkinter (built-in, no
+  extra deps) app with a Settings tab (folders, file types, encryption/verify
+  toggles, mirror, retention) and a Backups tab (status, archive list, one-click
+  restore, restore fire-drill). Long operations run off the UI thread; safety
+  warnings (same-disk) show inline. Form<->config mapping is pure and tested
+  (`gui.config_to_form` / `apply_form_to_config`); the view builds headless-clean.
+  Backs the Encrypt toggle with the real `control.encrypt` flag.
 - [x] **Setup wizard.** *(done)* `vault-tier-backup init` walks the user through
   the essentials, writes a valid `config.json`, generates or collects the backup
   password, offers to set the env var, and prints next steps. Config-building is

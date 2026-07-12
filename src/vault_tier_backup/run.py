@@ -77,7 +77,11 @@ def run(config_path, dry_run_override=None):
     backup_root_exe = os.path.join(base_dir, paths_cfg["backup_root_exe"])
     backup_root_source = os.path.join(backup_source, paths_cfg["backup_root_source"])
     os.makedirs(backup_root_exe, exist_ok=True)
-    os.makedirs(backup_root_source, exist_ok=True)
+    # Only create the second (source-drive) root when dual_backup actually uses
+    # it — otherwise a single-destination setup leaves an empty folder in the
+    # user's source directory.
+    if backup_cfg["dual_backup"]:
+        os.makedirs(backup_root_source, exist_ok=True)
 
     roots_exe = _build_period_roots(backup_root_exe)
     roots_source = _build_period_roots(backup_root_source)
@@ -414,6 +418,11 @@ def cmd_init(args):
     return wizard.run_wizard(args.config)
 
 
+def cmd_gui(args):
+    from . import gui  # imported lazily so headless installs don't need tkinter
+    return gui.launch(args.config)
+
+
 def cmd_install_schedule(args):
     print(schedule.install_schedule(args.config, time_str=args.time, task_name=args.name))
 
@@ -462,6 +471,9 @@ def main():
 
     p_init = sub.add_parser("init", help="Interactive setup — create config.json and set the password")
     p_init.set_defaults(func=cmd_init)
+
+    p_gui = sub.add_parser("gui", help="Open the desktop app (no JSON, no command line)")
+    p_gui.set_defaults(func=cmd_gui)
 
     p_backup = sub.add_parser("backup", help="Run a backup (default action)")
     p_backup.add_argument("--dry-run", action="store_true", default=None, help="Force dry-run regardless of config")

@@ -72,16 +72,29 @@ Either way you get the `vault-tier-backup` command on your PATH.
 
 ## Quick start (recommended)
 
-Run the interactive setup wizard — it asks a handful of questions, writes your
-`config.json`, generates a strong backup password, and tells you exactly what to
-do next:
+**Prefer a window over a terminal?** Open the desktop app — pick folders, flip
+toggles, and hit Save. No JSON, no command line:
+
+```bash
+vault-tier-backup gui
+```
+
+It has a Settings tab (source and destination folders, file types, encryption
+and verification toggles, offsite mirror, retention) and a Backups tab (last-run
+status, the list of archives, one-click Restore, and a "Test restore"
+fire-drill). It warns right in the window if your backup lands on the same disk
+as the source. Uses Python's built-in Tkinter — nothing extra to install.
+
+**Prefer the terminal?** Run the interactive setup wizard — it asks a handful of
+questions, writes your `config.json`, generates a strong backup password, and
+tells you exactly what to do next:
 
 ```bash
 vault-tier-backup init
 ```
 
-It starts you in dry-run mode so your first `vault-tier-backup backup` is a safe
-no-op you can inspect. Prefer to configure by hand? See below.
+Either way you start in dry-run mode, so your first `vault-tier-backup backup` is
+a safe no-op you can inspect. Prefer to configure by hand? See below.
 
 ## Configure manually
 
@@ -134,6 +147,7 @@ no-op you can inspect. Prefer to configure by hand? See below.
 ## Usage
 
 ```bash
+vault-tier-backup gui                          # desktop app (settings + backups)
 vault-tier-backup init                         # interactive first-time setup
 
 vault-tier-backup                              # run a backup (uses ./config.json)
