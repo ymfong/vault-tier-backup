@@ -23,7 +23,8 @@
     "delete_old_monthly": true,
     "delete_old_yearly": true,
     "full_backup_mode": false,
-    "verify_backups": true
+    "verify_backups": true,
+    "encrypt": true
   },
   "retention": {
     "daily_keep": 7,

@@ -33,17 +33,18 @@ class BackupVerificationError(Exception):
     """Raised when a freshly written archive fails its integrity check."""
 
 
-def verify_zip(zip_path, password, expected_count=None):
+def verify_zip(zip_path, password, expected_count=None, encrypted=True):
     """Re-open a freshly written archive and confirm it's readable and intact:
-    decrypt and CRC-check every member (testzip), and optionally confirm the
+    (decrypt and) CRC-check every member (testzip), and optionally confirm the
     member count. Returns (ok: bool, detail: str). Never raises — turns any
     failure into ok=False so the caller decides how loud to be."""
     if isinstance(password, str):
         password = password.encode()
     try:
         with pyzipper.AESZipFile(zip_path) as zf:
-            zf.setpassword(password)
-            bad = zf.testzip()  # reads + decrypts + CRC-checks each member
+            if encrypted:
+                zf.setpassword(password)
+            bad = zf.testzip()  # reads + (decrypts +) CRC-checks each member
             if bad is not None:
                 return False, f"corrupt member: {bad}"
             count = len(zf.namelist())
@@ -83,8 +84,9 @@ def create_encrypted_zip(
     skipped=None,
     retries=DEFAULT_LOCK_RETRIES,
     retry_delay=DEFAULT_LOCK_RETRY_DELAY,
+    encrypt=True,
 ):
-    """Create one AES-encrypted zip from files_list.
+    """Create one zip from files_list, AES-encrypted unless ``encrypt`` is False.
 
     Each file is added independently: a file that stays locked (open in Excel/
     Access) is skipped with a warning and the rest of the backup still
@@ -107,9 +109,11 @@ def create_encrypted_zip(
 
     try:
         with pyzipper.AESZipFile(
-            zip_path, "w", compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES
+            zip_path, "w", compression=pyzipper.ZIP_DEFLATED,
+            encryption=pyzipper.WZ_AES if encrypt else None,
         ) as zipf:
-            zipf.setpassword(password)
+            if encrypt:
+                zipf.setpassword(password)
             for full_path, rel_path, size_bytes, depth in files_list:
                 try:
                     _add_file_with_retry(zipf, full_path, rel_path, retries, retry_delay)

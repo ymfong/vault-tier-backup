@@ -57,6 +57,7 @@ def build_config(answers):
             "delete_old_yearly": True,
             "full_backup_mode": False,
             "verify_backups": True,
+            "encrypt": answers.get("encrypt", True),
         },
         "retention": answers.get(
             "retention", {"daily_keep": 7, "weekly_keep": 5, "monthly_keep": 12, "yearly_keep": 2}

@@ -92,11 +92,22 @@ def run(config_path, dry_run_override=None):
     weekly_full_backup = backup_cfg["weekly_full_backup"]
     max_age_days = backup_cfg["max_age_days"]
     full_backup_mode = control.get("full_backup_mode", False)
+    encrypt = control.get("encrypt", True)
+
+    if not encrypt:
+        logger.warning(
+            "Encryption is OFF — backups are plain zip files. Anyone who can read "
+            "the backup folder (or a mirror / cloud copy) can open your files. "
+            "Turn it back on unless you specifically need unencrypted archives."
+        )
 
     # Secrets are only required from the environment when the feature that
     # needs them is actually enabled and we're not in a dry run (dry runs never
-    # touch the zip password, SMTP login, or OneDrive token).
-    zip_password = get_required_env("BACKUP_ZIP_PASSWORD").encode() if not dry_run else b""
+    # touch the zip password, SMTP login, or OneDrive token). With encryption
+    # off, no zip password is needed at all.
+    zip_password = (
+        get_required_env("BACKUP_ZIP_PASSWORD").encode() if (encrypt and not dry_run) else b""
+    )
 
     email_password = None
     if control.get("email_enabled", False) and not dry_run:
@@ -111,7 +122,7 @@ def run(config_path, dry_run_override=None):
     # existing backups here (or register it on first use) BEFORE writing a
     # single archive, so a changed/typo'd password aborts loudly instead of
     # silently producing unrecoverable backups. Dry runs never write, so skip.
-    if not dry_run:
+    if not dry_run and encrypt:
         keyguard.ensure_token(backup_root_exe, zip_password)
         if dual_backup:
             keyguard.ensure_token(backup_root_source, zip_password)
@@ -176,12 +187,12 @@ def run(config_path, dry_run_override=None):
     skipped = []  # (rel_path, reason) for files locked/unreadable at backup time
     created = []  # (path, expected_member_count | None) to verify after writing
     if dual_backup:
-        total_size += archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run, skipped=skipped)
-        total_size += archive.create_encrypted_zip(files, zip_path_source, zip_password, dry_run)
+        total_size += archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run, skipped=skipped, encrypt=encrypt)
+        total_size += archive.create_encrypted_zip(files, zip_path_source, zip_password, dry_run, encrypt=encrypt)
         created = [(zip_path_exe, len(files) - len(skipped)), (zip_path_source, None)]
         zip_names = f"{zip_name_exe} & {zip_name_source}"
     else:
-        total_size = archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run, skipped=skipped)
+        total_size = archive.create_encrypted_zip(files, zip_path_exe, zip_password, dry_run, skipped=skipped, encrypt=encrypt)
         created = [(zip_path_exe, len(files) - len(skipped))]
         zip_names = zip_name_exe
 
@@ -198,7 +209,7 @@ def run(config_path, dry_run_override=None):
     # recorded. Runs before retention so a bad backup can't trigger pruning.
     if control.get("verify_backups", True) and not dry_run:
         for path, expected in created:
-            ok, detail = archive.verify_zip(path, zip_password, expected)
+            ok, detail = archive.verify_zip(path, zip_password, expected, encrypted=encrypt)
             if ok:
                 logger.info(f"Verified integrity: {os.path.basename(path)} ({detail})")
             else:
