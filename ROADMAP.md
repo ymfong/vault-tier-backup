@@ -72,12 +72,14 @@ fails you when it matters. Nothing else should ship before these.
   registers runs through the same exe. Build: `packaging/exe_entry.py`.
   **Still open:** the exe is unsigned, so SmartScreen warns on first run —
   code-signing needs a paid certificate.
-- [x] **Desktop GUI.** *(done)* `vault-tier-backup gui` — a Tkinter (built-in, no
-  extra deps) app with a Settings tab (folders, file types, encryption/verify
-  toggles, mirror, retention) and a Backups tab (status, archive list, one-click
-  restore, restore fire-drill). Long operations run off the UI thread; safety
-  warnings (same-disk) show inline. Form<->config mapping is pure and tested
-  (`gui.config_to_form` / `apply_form_to_config`); the view builds headless-clean.
+- [x] **Desktop GUI.** *(done)* `vault-tier-backup gui` — a pywebview app (native
+  window, Microsoft WebView2 inside, preinstalled on Win 10/11) rendering a
+  single two-pane page: Settings on the left (folders, file types, Encrypt/Verify
+  toggles, mirror, retention), Dashboard on the right (status card, storage
+  metrics, archive list with one-click restore, restore fire-drill). Bridge calls
+  run on worker threads so long backups never freeze the window; safety warnings
+  (same-disk) show inline. Form<->config mapping and the page builder are pure
+  and tested (`gui.config_to_form` / `apply_form_to_config` / `build_html`).
   Backs the Encrypt toggle with the real `control.encrypt` flag.
 - [x] **Setup wizard.** *(done)* `vault-tier-backup init` walks the user through
   the essentials, writes a valid `config.json`, generates or collects the backup

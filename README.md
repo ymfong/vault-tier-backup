@@ -81,9 +81,11 @@ The pip installs give you the `vault-tier-backup` command on your PATH.
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --noconsole --name VaultTierBackup packaging/exe_entry.py
+pyinstaller --onefile --noconsole --name VaultTierBackup --collect-all pywebview packaging/exe_entry.py
 # -> dist/VaultTierBackup.exe
 ```
+
+(`--collect-all pywebview` bundles the GUI's webview bridge — without it the exe builds fine but the window fails to open.)
 
 ## Quick start (recommended)
 
@@ -94,11 +96,12 @@ toggles, and hit Save. No JSON, no command line:
 vault-tier-backup gui
 ```
 
-It has a Settings tab (source and destination folders, file types, encryption
-and verification toggles, offsite mirror, retention) and a Backups tab (last-run
-status, the list of archives, one-click Restore, and a "Test restore"
-fire-drill). It warns right in the window if your backup lands on the same disk
-as the source. Uses Python's built-in Tkinter — nothing extra to install.
+A single window with Settings on the left (source and destination folders, file
+types, encryption and verification toggles, offsite mirror, retention) and a
+Dashboard on the right (last-backup status, storage metrics, the archive list
+with one-click Restore, and a "Test restore" fire-drill). It warns right in the
+window if your backup lands on the same disk as the source. Rendered with
+Microsoft's WebView2, which is preinstalled on Windows 10/11.
 
 **Prefer the terminal?** Run the interactive setup wizard — it asks a handful of
 questions, writes your `config.json`, generates a strong backup password, and

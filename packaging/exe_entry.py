@@ -3,7 +3,7 @@
 Build (from the repo root, inside the venv):
 
     pip install pyinstaller
-    pyinstaller --onefile --noconsole --name VaultTierBackup packaging/exe_entry.py
+    pyinstaller --onefile --noconsole --name VaultTierBackup --collect-all pywebview packaging/exe_entry.py
 
 Output lands in dist/VaultTierBackup.exe. Double-click opens the GUI (config in
 %APPDATA%\\vault-tier-backup); CLI arguments fall through to the normal CLI so

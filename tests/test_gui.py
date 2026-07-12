@@ -48,6 +48,19 @@ def test_apply_form_keeps_untouched_config_sections():
     assert "email" in config
 
 
+def test_build_html_embeds_settings_and_placeholders_resolved():
+    config = wizard.build_config({"source": "D:\\Data", "extensions": [".xlsx"]})
+    html = gui.build_html(gui.config_to_form(config))
+    # The saved settings and weekday names are embedded as real JSON...
+    assert '"source": "D:\\\\Data"' in html
+    assert "Monday" in html and "Sunday" in html
+    # ...every form control the JS populates exists...
+    for el in ("source", "dest", "extensions", "weekly_day", "encrypt", "verify", "mirror"):
+        assert f'id="{el}"' in html
+    # ...and no template token leaks into the page.
+    assert "__FORM_JSON__" not in html and "__WEEKDAYS_JSON__" not in html
+
+
 def test_backup_summary():
     entries = [
         {"name": "b.zip", "size": 100, "mtime": 200, "tier": "daily", "path": "b"},
