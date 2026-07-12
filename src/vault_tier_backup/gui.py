@@ -117,24 +117,27 @@ _PAGE = r"""<!DOCTYPE html>
   html,body { height:100%; }
   body {
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
-    font-size:14px; color:var(--text); background:var(--card);
+    font-size:15px; line-height:1.45; color:var(--text); background:var(--card);
+    -webkit-font-smoothing:antialiased;
   }
   .app { display:flex; height:100vh; }
-  .sidebar { flex:0 0 370px; border-right:1px solid var(--border); overflow-y:auto; padding:22px; }
-  .main { flex:1; background:var(--bg); overflow-y:auto; padding:22px; }
-  h1 { font-size:19px; font-weight:600; margin-bottom:18px; }
-  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase;
-             color:var(--muted); margin:18px 0 8px; }
+  .sidebar { flex:0 0 388px; border-right:1px solid var(--border); display:flex; flex-direction:column; }
+  .sbody { flex:1; overflow-y:auto; padding:24px 24px 10px; }
+  .sfoot { padding:14px 24px 16px; border-top:1px solid var(--border); background:var(--card); }
+  .main { flex:1; background:var(--bg); overflow-y:auto; padding:24px; }
+  h1 { font-size:21px; font-weight:600; margin-bottom:18px; letter-spacing:-.2px; }
+  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.9px; text-transform:uppercase;
+             color:var(--muted); margin:20px 0 9px; }
   .eyebrow:first-of-type { margin-top:0; }
-  label.f { display:block; font-size:13px; font-weight:600; margin:10px 0 5px; }
+  label.f { display:block; font-size:13.5px; font-weight:600; margin:11px 0 5px; }
   .row { display:flex; gap:8px; }
   input[type=text], select {
-    width:100%; padding:9px 11px; border:1px solid var(--border2); border-radius:7px;
-    font-size:14px; font-family:inherit; color:var(--text); background:var(--card); outline:none;
+    width:100%; padding:10px 12px; border:1px solid var(--border2); border-radius:8px;
+    font-size:15px; font-family:inherit; color:var(--text); background:var(--card); outline:none;
   }
-  input[type=text]:focus, select:focus { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-tint); }
-  .browse { padding:9px 14px; border:1px solid var(--border2); border-radius:7px; background:var(--card);
-            font-size:13px; font-weight:600; color:var(--text); cursor:pointer; white-space:nowrap; }
+  input[type=text]:focus, select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-tint); }
+  .browse { padding:10px 15px; border:1px solid var(--border2); border-radius:8px; background:var(--card);
+            font-size:14px; font-weight:600; color:var(--text); cursor:pointer; white-space:nowrap; }
   .browse:hover { background:var(--bg); }
 
   .toggle { display:flex; align-items:center; gap:12px; padding:8px 0; cursor:pointer; user-select:none; }
@@ -145,21 +148,22 @@ _PAGE = r"""<!DOCTYPE html>
                border-radius:50%; background:#fff; transition:left .18s; box-shadow:0 1px 2px rgba(0,0,0,.2); }
   .toggle input:checked + .sw { background:var(--ok); }
   .toggle input:checked + .sw::after { left:20px; }
-  .tl strong { display:block; font-size:14px; font-weight:600; }
-  .tl span { font-size:12px; color:var(--muted); }
+  .tl strong { display:block; font-size:14.5px; font-weight:600; }
+  .tl span { font-size:12.5px; color:var(--muted); }
 
   .keep { display:flex; gap:10px; }
   .keep div { flex:1; }
-  .keep label { display:block; font-size:11px; color:var(--muted); margin-bottom:3px; }
-  .keep input { width:100%; padding:7px 8px; border:1px solid var(--border2); border-radius:7px;
-                font-size:14px; text-align:center; }
+  .keep label { display:block; font-size:11.5px; color:var(--muted); margin-bottom:4px; }
+  .keep input { width:100%; padding:8px; border:1px solid var(--border2); border-radius:8px;
+                font-size:15px; text-align:center; }
 
   .banner { display:none; background:var(--warn-tint); border:1px solid var(--warn-border);
             color:var(--warn-ink); border-radius:8px; padding:10px 12px; font-size:13px;
-            margin-top:14px; line-height:1.5; }
+            margin-bottom:12px; line-height:1.5; }
 
-  .btns { display:flex; gap:8px; margin-top:16px; }
-  .btn { flex:1; padding:11px 10px; border-radius:8px; font-size:14px; font-weight:600;
+  .btns { display:flex; gap:8px; }
+  .btns + .btns { margin-top:8px; }
+  .btn { flex:1; padding:11px 10px; border-radius:8px; font-size:14.5px; font-weight:600;
          cursor:pointer; border:1px solid transparent; text-align:center; }
   .btn.solid { background:var(--accent); color:#fff; }
   .btn.solid:hover { background:var(--accent-dark); }
@@ -171,25 +175,25 @@ _PAGE = r"""<!DOCTYPE html>
                  padding:14px 16px; margin-bottom:14px; }
   .status-card.none { background:#f1f5f9; border-color:var(--border); }
   .status-card .k { font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--ok-ink); }
-  .status-card .v { font-size:18px; font-weight:700; color:var(--ok-ink); margin-top:3px; }
+  .status-card .v { font-size:19px; font-weight:700; color:var(--ok-ink); margin-top:4px; }
   .status-card.none .k, .status-card.none .v { color:var(--text2); }
 
-  .metrics { display:flex; gap:12px; margin-bottom:16px; }
+  .metrics { display:flex; gap:12px; margin-bottom:18px; }
   .metric { flex:1; background:var(--card); border:1px solid var(--border); border-radius:10px;
-            padding:14px; text-align:center; }
-  .metric .k { font-size:12px; color:var(--muted); margin-bottom:6px; }
-  .metric .v { font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+            padding:15px; text-align:center; }
+  .metric .k { font-size:12.5px; color:var(--muted); margin-bottom:7px; }
+  .metric .v { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
 
   .list { display:flex; flex-direction:column; gap:8px; }
   .item { background:var(--card); border:1px solid var(--border); border-radius:10px;
-          padding:11px 13px; display:flex; align-items:center; justify-content:space-between; }
-  .item .nm { font-weight:600; }
-  .badge { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.4px;
-           text-transform:uppercase; padding:2px 8px; border-radius:5px; margin-left:8px;
-           background:var(--accent-tint); color:var(--accent-dark); vertical-align:1px; }
-  .item .mt { font-size:12px; color:var(--muted); margin-top:2px; }
-  .rbtn { padding:7px 14px; font-size:13px; font-weight:600; border:1px solid var(--border2);
-          border-radius:7px; background:var(--card); color:var(--accent-dark); cursor:pointer; }
+          padding:12px 14px; display:flex; align-items:center; justify-content:space-between; }
+  .item .nm { font-weight:600; font-size:15px; }
+  .badge { display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.4px;
+           text-transform:uppercase; padding:3px 8px; border-radius:5px; margin-left:9px;
+           background:var(--accent-tint); color:var(--accent-dark); vertical-align:1.5px; }
+  .item .mt { font-size:12.5px; color:var(--muted); margin-top:3px; }
+  .rbtn { padding:8px 15px; font-size:13.5px; font-weight:600; border:1px solid var(--border2);
+          border-radius:8px; background:var(--card); color:var(--accent-dark); cursor:pointer; }
   .rbtn:hover { border-color:var(--accent); }
   .rbtn:disabled { opacity:.5; cursor:default; }
   .empty { color:var(--muted); padding:14px 2px; }
@@ -217,6 +221,7 @@ _PAGE = r"""<!DOCTYPE html>
 <body>
 <div class="app">
   <aside class="sidebar">
+   <div class="sbody">
     <h1>Settings</h1>
 
     <p class="eyebrow">Folders</p>
@@ -246,9 +251,10 @@ _PAGE = r"""<!DOCTYPE html>
       <div><label>Monthly</label><input type="number" min="0" id="monthly_keep"></div>
       <div><label>Yearly</label><input type="number" min="0" id="yearly_keep"></div>
     </div>
+   </div>
 
+   <div class="sfoot">
     <div class="banner" id="banner"></div>
-
     <div class="btns">
       <button class="btn solid" id="b_save" onclick="doSave()">Save settings</button>
       <button class="btn line" id="b_dry" onclick="doBackup(true)">Test run</button>
@@ -257,6 +263,7 @@ _PAGE = r"""<!DOCTYPE html>
       <button class="btn solid" id="b_run" onclick="doBackup(false)">Run backup now</button>
       <button class="btn line" id="b_sched" onclick="doSchedule()">Schedule daily</button>
     </div>
+   </div>
   </aside>
 
   <main class="main">
@@ -302,6 +309,16 @@ let pwResolve = null;
 
 function $(id) { return document.getElementById(id); }
 function api() { return window.pywebview.api; }
+
+function friendlyName(name) {
+  // "2026-07-11_20-00-00_daily.zip" -> "Sat, 11 Jul 2026 · 8:00 PM"
+  const m = name.match(/^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})_/);
+  if (!m) return name.replace(/\.zip$/i, "");
+  const d = new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
+  const date = d.toLocaleDateString(undefined, {weekday:"short", day:"numeric", month:"short", year:"numeric"});
+  const time = d.toLocaleTimeString(undefined, {hour:"numeric", minute:"2-digit"});
+  return date + " · " + time;
+}
 
 function fillForm() {
   const sel = $("weekly_day");
@@ -457,9 +474,11 @@ async function refresh() {
     item.className = "item";
     const left = document.createElement("div");
     left.innerHTML = '<span class="nm"></span><span class="badge"></span><div class="mt"></div>';
-    left.querySelector(".nm").textContent = e.name;
+    const nm = left.querySelector(".nm");
+    nm.textContent = friendlyName(e.name);
+    nm.title = e.name;  // raw filename on hover for anyone who wants it
     left.querySelector(".badge").textContent = e.tier;
-    left.querySelector(".mt").textContent = e.size + " · " + e.when;
+    left.querySelector(".mt").textContent = e.size;
     const btn = document.createElement("button");
     btn.className = "rbtn";
     btn.textContent = "Restore";
@@ -596,7 +615,8 @@ class _Api:  # pragma: no cover - exercised through a live window
         summary = backup_summary(entries)
         latest = None
         if summary["latest"]:
-            latest = datetime.fromtimestamp(summary["latest"]["mtime"]).strftime("%Y-%m-%d %H:%M")
+            # Friendly, matching the list below (e.g. "Sat, Jul 11, 2026 · 8:00 PM").
+            latest = datetime.fromtimestamp(summary["latest"]["mtime"]).strftime("%a, %b %d, %Y · %I:%M %p")
         return {
             "latest": latest,
             "count": summary["count"],
@@ -630,9 +650,9 @@ def launch(config_path):  # pragma: no cover - requires a display
         "vault-tier-backup",
         html=build_html(config_to_form(config)),
         js_api=api,
-        width=980,
-        height=700,
-        min_size=(760, 540),
+        width=1000,
+        height=720,
+        min_size=(820, 560),
     )
     api._window = window
     webview.start()
